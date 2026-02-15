@@ -46,8 +46,9 @@ export class GrocyMcpServer {
     this.toolRegistry = toolRegistry;
     this.resourceHandler = resourceHandler;
     this.parseToolConfiguration();
-    this.setupHandlers();
-    this.setupErrorHandling();
+    this.parseToolConfiguration();
+    this.setupHandlers(this.server);
+    this.setupErrorHandling(this.server);
   }
 
   static async create(): Promise<GrocyMcpServer> {
@@ -99,9 +100,9 @@ export class GrocyMcpServer {
     }
   }
 
-  private setupHandlers(): void {
+  private setupHandlers(server: Server): void {
     // Initialize handler
-    this.server.setRequestHandler(
+    server.setRequestHandler(
       z.object({ method: z.literal('initialize'), params: z.any().optional() }),
       async (request) => {
         logger.debug('Initialize request', 'MCP');
@@ -114,7 +115,7 @@ export class GrocyMcpServer {
     );
 
     // List tools
-    this.server.setRequestHandler(ListToolsRequestSchema, async () => {
+    server.setRequestHandler(ListToolsRequestSchema, async () => {
       const allTools = this.toolRegistry.getDefinitions();
       const filteredTools = allTools.filter(tool => this.enabledTools.has(tool.name));
       
@@ -123,7 +124,7 @@ export class GrocyMcpServer {
     });
 
     // Call tool
-    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name: toolName, arguments: args } = request.params;
       
       // Check if tool is enabled
@@ -163,17 +164,17 @@ export class GrocyMcpServer {
     });
 
     // Resources
-    this.server.setRequestHandler(ListResourcesRequestSchema, async () => {
+    server.setRequestHandler(ListResourcesRequestSchema, async () => {
       return this.resourceHandler.listResources();
     });
 
-    this.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+    server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
       return this.resourceHandler.readResource(request.params.uri);
     });
   }
 
-  private setupErrorHandling(): void {
-    this.server.onerror = (error) => {
+  private setupErrorHandling(server: Server): void {
+    server.onerror = (error) => {
       logger.error('MCP protocol error', 'MCP', { error });
     };
     
@@ -182,6 +183,29 @@ export class GrocyMcpServer {
       await this.server.close();
       process.exit(0);
     });
+  }
+
+  public createMcpServer(): Server {
+    const server = new Server(
+      {
+        name: SERVER_NAME,
+        version: VERSION,
+        serverUrl: "https://github.com/miguelangel-nubla/mcp-grocy",
+        documentationUrl: "https://github.com/miguelangel-nubla/mcp-grocy/blob/main/README.md"
+      },
+      {
+        capabilities: {
+          tools: {},
+          resources: {},
+          prompts: {}
+        }
+      }
+    );
+    
+    this.setupHandlers(server);
+    this.setupErrorHandling(server);
+    
+    return server;
   }
 
   public async start(): Promise<void> {
@@ -194,7 +218,7 @@ export class GrocyMcpServer {
     if (config.server.enable_http_server) {
       try {
         logger.config(`Starting HTTP server on port ${config.server.http_server_port}`);
-        const serverFactory = () => this.server;
+        const serverFactory = () => this.createMcpServer();
         await startHttpServer(serverFactory, config.server.http_server_port);
       } catch (error) {
         logger.error('Failed to start HTTP server', 'SERVER', { error });

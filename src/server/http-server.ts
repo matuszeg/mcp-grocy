@@ -21,7 +21,7 @@ export function startHttpServer(mcpServer: Server | (() => Server), port: number
   // Enable CORS for all routes
   app.use(cors({
     origin: '*',
-    methods: ['GET', 'POST', 'OPTIONS'],
+    methods: ['GET', 'POST', 'OPTIONS', 'DELETE'],
     allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Mcp-Session-Id', 'Authorization'],
     exposedHeaders: ['Mcp-Session-Id', 'Content-Type'],
     optionsSuccessStatus: 200
@@ -63,29 +63,25 @@ export function startHttpServer(mcpServer: Server | (() => Server), port: number
   };
 
   // Streamable HTTP endpoint (Context7 modern)
-  app.post('/mcp', async (req, res) => {
+  app.all('/mcp', async (req, res) => {
     try {
       const clientSessionId = req.headers['mcp-session-id'] as string | undefined;
       let transport: StreamableHTTPServerTransport | undefined = undefined;
 
       // Accept header check (can be done early)
       const accept = req.headers.accept || '';
+
+      // Home Assistant might not send perfect accept headers, so we log a warning instead of blocking
       if (!accept.includes('application/json') && !accept.includes('text/event-stream')) {
-        logger.error('Client must accept application/json or text/event-stream', 'server');
-        res.status(406).json({
-          jsonrpc: '2.0',
-          error: {
-            code: -32000,
-            message: 'Not Acceptable: Client must accept application/json or text/event-stream'
-          },
-          id: req.body?.id || null
-        });
-        return;
+        logger.warn('Client should accept application/json or text/event-stream', 'server');
       }
 
-      if (clientSessionId) {
+      const isInitializeRequest = req.body?.method === 'initialize';
+
+      if (clientSessionId && !isInitializeRequest) {
         transport = streamableTransports[clientSessionId];
         if (!transport) {
+          logger.warn(`Session ${clientSessionId} not found, returning 400`, 'server');
           res.status(400).json({
             jsonrpc: '2.0',
             error: { code: -32001, message: `Invalid or expired session ID: ${clientSessionId}. Please re-initialize.` },
@@ -94,11 +90,17 @@ export function startHttpServer(mcpServer: Server | (() => Server), port: number
           return;
         }
       } else {
+        // Create new transport for new sessions OR initialize requests
+        // If it's an initialize request with a stale session ID, we start fresh
+        if (clientSessionId) {
+          logger.info(`Received initialize request with stale session ID ${clientSessionId}, starting new session`, 'server');
+        }
         // No session ID provided by client, create new transport
         const newGeneratedSessionId = randomUUID();
         
         const newTransportInstance = new StreamableHTTPServerTransport({
-          sessionIdGenerator: () => newGeneratedSessionId
+          sessionIdGenerator: () => newGeneratedSessionId,
+          enableJsonResponse: true
         });
         
         transport = newTransportInstance;
@@ -149,9 +151,12 @@ export function startHttpServer(mcpServer: Server | (() => Server), port: number
       res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
+      res.setHeader('Access-Control-Allow-Origin', '*');
       
       const transport = new SSEServerTransport('/mcp/messages', res);
       const sessionId = transport.sessionId;
+      
+      logger.info(`Created SSE session: ${sessionId}`, 'DEBUG');
       
       sseTransports[sessionId] = transport;
       
@@ -198,6 +203,7 @@ export function startHttpServer(mcpServer: Server | (() => Server), port: number
     const sessionId = req.query.sessionId as string;
     
     if (!sessionId) {
+      logger.error('Missing sessionId parameter in SSE message', 'server');
       res.status(400).json({
         error: 'Missing sessionId parameter',
         status: 400
@@ -207,6 +213,7 @@ export function startHttpServer(mcpServer: Server | (() => Server), port: number
     
     const transport = sseTransports[sessionId];
     if (transport) {
+      logger.info(`Found active transport for session ${sessionId}`, 'DEBUG');
       try {
         await transport.handlePostMessage(req, res, req.body);
       } catch (error) {
