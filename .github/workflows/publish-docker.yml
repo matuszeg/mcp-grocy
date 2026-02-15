@@ -1,11 +1,11 @@
 name: Publish Docker Image
 
-run-name: 'Publish Docker ${{ inputs.release_version || github.ref_name }}'
+run-name: "Publish Docker ${{ inputs.release_version || github.ref_name }}"
 
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
   workflow_call:
     inputs:
       release_version:
@@ -16,58 +16,60 @@ concurrency:
   group: publish-docker-${{ inputs.release_version || github.ref_name }}
   cancel-in-progress: false
 
-
 jobs:
   publish-docker:
     name: Publish Docker Image to GHCR
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     timeout-minutes: 45
     env:
       RELEASE_VERSION: ${{ inputs.release_version || github.ref_name }}
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        ref: main
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
 
-    - name: Log in to GitHub Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Check if image already exists
-      id: check_image
-      run: |
-        echo "Checking if Docker image for version $RELEASE_VERSION already exists..."
-        if docker buildx imagetools inspect ghcr.io/${{ github.repository }}:$RELEASE_VERSION &>/dev/null; then
-          echo "image_exists=true" >> $GITHUB_OUTPUT
-        else
-          echo "image_exists=false" >> $GITHUB_OUTPUT
-        fi
+      - name: Check if image already exists
+        id: check_image
+        run: |
+          echo "Checking if Docker image for version $RELEASE_VERSION already exists..."
+          if docker buildx imagetools inspect ghcr.io/${{ github.repository }}:$RELEASE_VERSION &>/dev/null; then
+            echo "image_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "image_exists=false" >> $GITHUB_OUTPUT
+          fi
 
-    - name: Setup Docker
-      if: steps.check_image.outputs.image_exists != 'true'
-      uses: ./.github/actions/setup-docker
+      - name: Setup Docker
+        if: steps.check_image.outputs.image_exists != 'true'
+        uses: ./.github/actions/setup-docker
 
-    - name: Build and push multi-platform image
-      if: steps.check_image.outputs.image_exists != 'true'
-      uses: docker/build-push-action@v6
-      with:
-        context: .
-        platforms: linux/amd64,linux/arm64
-        push: true
-        tags: |
-          ghcr.io/${{ github.repository }}:${{ env.RELEASE_VERSION }}
-          ghcr.io/${{ github.repository }}:latest
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+      - name: Build and push multi-platform image
+        if: steps.check_image.outputs.image_exists != 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ env.RELEASE_VERSION }}
+            ghcr.io/${{ github.repository }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-    - name: Docker Publish Summary
-      run: |
-        if [[ "${{ steps.check_image.outputs.image_exists }}" == "true" ]]; then
-          echo "Image for version $RELEASE_VERSION already exists in the registry. No new image was built."
-        else
-          echo "Successfully built and published Docker image for version $RELEASE_VERSION"
-        fi
+      - name: Docker Publish Summary
+        run: |
+          if [[ "${{ steps.check_image.outputs.image_exists }}" == "true" ]]; then
+            echo "Image for version $RELEASE_VERSION already exists in the registry. No new image was built."
+          else
+            echo "Successfully built and published Docker image for version $RELEASE_VERSION"
+          fi
