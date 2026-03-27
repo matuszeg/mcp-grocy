@@ -6,6 +6,7 @@ export const inventoryToolDefinitions: ToolDefinition[] = [
     name: 'inventory_products_get',
     description:
       '[INVENTORY/PRODUCTS] Get specific fields for all products from your Grocy instance. You must specify which fields to retrieve.',
+    annotations: { readOnlyHint: true },
     inputSchema: {
       type: 'object',
       properties: {
@@ -55,6 +56,7 @@ export const inventoryToolDefinitions: ToolDefinition[] = [
     name: 'inventory_products_get_groups',
     description:
       '[INVENTORY/PRODUCTS] **Categories only:** list product groups (taxonomy), not individual products. For product rows with fields use inventory_products_get.',
+    annotations: { readOnlyHint: true },
     inputSchema: {
       type: 'object',
       properties: {},
@@ -65,13 +67,14 @@ export const inventoryToolDefinitions: ToolDefinition[] = [
     name: 'inventory_products_get_price_history',
     description:
       '[INVENTORY/PRODUCTS] Get the price history of a product from your Grocy instance.',
+    annotations: { readOnlyHint: true },
     inputSchema: {
       type: 'object',
       properties: {
         productId: {
           type: 'number',
           description:
-            'ID of the product to get price history for. Use get_products tool to find the correct product ID by name.',
+            'ID of the product to get price history for. Use inventory_products_lookup to find the product ID by name (or inventory_products_get with fields if listing products).',
         },
       },
       required: ['productId'],
@@ -83,6 +86,7 @@ export const inventoryToolDefinitions: ToolDefinition[] = [
     name: 'inventory_stock_get_all',
     description:
       '[INVENTORY/STOCK] **Full stock dump**—every stock entry in the home with stockIds. Prefer inventory_stock_get_by_product when the user names one product; prefer inventory_stock_get_by_location when they name one storage place.',
+    annotations: { readOnlyHint: true },
     inputSchema: {
       type: 'object',
       properties: {},
@@ -93,13 +97,14 @@ export const inventoryToolDefinitions: ToolDefinition[] = [
     name: 'inventory_stock_get_by_product',
     description:
       '[INVENTORY/STOCK] Stock rows for **one product** across locations (needs productId). Use when the user asks how much of a product is on hand or needs stockId for that product—not for everything in a cupboard (use inventory_stock_get_by_location).',
+    annotations: { readOnlyHint: true },
     inputSchema: {
       type: 'object',
       properties: {
         productId: {
           type: 'number',
           description:
-            'ID of the product to get stock entries for. Use get_products tool to find the correct product ID by name.',
+            'ID of the product to get stock entries for. Use inventory_products_lookup to find the product ID by name (or inventory_products_get with fields if listing products).',
         },
       },
       required: ['productId'],
@@ -109,6 +114,7 @@ export const inventoryToolDefinitions: ToolDefinition[] = [
     name: 'inventory_stock_get_volatile',
     description:
       '[INVENTORY/STOCK] Get volatile stock information (due products, overdue products, expired products, missing products).',
+    annotations: { readOnlyHint: true },
     inputSchema: {
       type: 'object',
       properties: {
@@ -124,6 +130,7 @@ export const inventoryToolDefinitions: ToolDefinition[] = [
     name: 'inventory_stock_get_by_location',
     description:
       '[INVENTORY/STOCK] Everything stocked in **one storage location** (needs locationId from system_locations_get). Use when the user asks what is in the freezer/pantry—not for one named product across sites (use inventory_stock_get_by_product).',
+    annotations: { readOnlyHint: true },
     inputSchema: {
       type: 'object',
       properties: {
@@ -147,7 +154,7 @@ export const inventoryToolDefinitions: ToolDefinition[] = [
         productId: {
           type: 'number',
           description:
-            'ID of the product to purchase. Use get_products tool to find the correct product ID by name.',
+            'ID of the product to purchase. Use inventory_products_lookup to find the product ID by name (or inventory_products_get with fields if listing products).',
         },
         amount: {
           type: 'number',
@@ -166,7 +173,7 @@ export const inventoryToolDefinitions: ToolDefinition[] = [
         locationId: {
           type: 'number',
           description:
-            "Location ID where the product should be stored. Use get_locations tool to find the correct location ID. If not provided, uses product's default location.",
+            "Location ID where the product should be stored. Use system_locations_get to find the location ID. If not provided, uses product's default location.",
         },
         note: {
           type: 'string',
@@ -186,7 +193,7 @@ export const inventoryToolDefinitions: ToolDefinition[] = [
         productId: {
           type: 'number',
           description:
-            'ID of the product to consume. Use get_products tool to find the correct product ID by name.',
+            'ID of the product to consume. Use inventory_products_lookup to find the product ID by name (or inventory_products_get with fields if listing products).',
         },
         amount: {
           type: 'number',
@@ -201,7 +208,7 @@ export const inventoryToolDefinitions: ToolDefinition[] = [
         locationId: {
           type: 'number',
           description:
-            'Location ID to consume from (optional). Use get_locations tool to find the correct location ID.',
+            'Location ID to consume from (optional). Use system_locations_get to find the location ID.',
         },
         note: {
           type: 'string',
@@ -221,7 +228,7 @@ export const inventoryToolDefinitions: ToolDefinition[] = [
         productId: {
           type: 'number',
           description:
-            'ID of the product to transfer. Use get_products tool to find the correct product ID by name.',
+            'ID of the product to transfer. Use inventory_products_lookup to find the product ID by name (or inventory_products_get with fields if listing products).',
         },
         amount: {
           type: 'number',
@@ -231,12 +238,12 @@ export const inventoryToolDefinitions: ToolDefinition[] = [
         fromLocationId: {
           type: 'number',
           description:
-            'Source location ID. Use get_locations tool to find the correct location ID.',
+            'Source location ID. Use system_locations_get to find the location ID.',
         },
         toLocationId: {
           type: 'number',
           description:
-            'Destination location ID. Use get_locations tool to find the correct location ID.',
+            'Destination location ID. Use system_locations_get to find the location ID.',
         },
         note: {
           type: 'string',
@@ -256,7 +263,7 @@ export const inventoryToolDefinitions: ToolDefinition[] = [
         productId: {
           type: 'number',
           description:
-            'ID of the product to inventory. Use get_products tool to find the correct product ID by name.',
+            'ID of the product to inventory. Use inventory_products_lookup to find the product ID by name (or inventory_products_get with fields if listing products).',
         },
         newAmount: {
           type: 'number',
@@ -270,7 +277,7 @@ export const inventoryToolDefinitions: ToolDefinition[] = [
         locationId: {
           type: 'number',
           description:
-            'Location ID for the inventory (optional). Use get_locations tool to find the correct location ID.',
+            'Location ID for the inventory (optional). Use system_locations_get to find the location ID.',
         },
         note: {
           type: 'string',
@@ -290,7 +297,7 @@ export const inventoryToolDefinitions: ToolDefinition[] = [
         productId: {
           type: 'number',
           description:
-            'ID of the product to open. Use get_products tool to find the correct product ID by name.',
+            'ID of the product to open. Use inventory_products_lookup to find the product ID by name (or inventory_products_get with fields if listing products).',
         },
         amount: {
           type: 'number',
@@ -310,6 +317,7 @@ export const inventoryToolDefinitions: ToolDefinition[] = [
     name: 'inventory_products_lookup',
     description:
       '[INVENTORY/PRODUCTS] Search for products by name using fuzzy matching. Returns up to 5 best matches with stock information and location details.',
+    annotations: { readOnlyHint: true },
     inputSchema: {
       type: 'object',
       properties: {
@@ -347,7 +355,7 @@ export const inventoryToolDefinitions: ToolDefinition[] = [
         stockId: {
           type: 'number',
           description:
-            'ID of the stock entry to print label for. Use get_stock_by_product tool to find specific stockId values.',
+            'ID of the stock entry to print label for. Use inventory_stock_get_by_product to find stockId values.',
         },
         productId: {
           type: 'number',

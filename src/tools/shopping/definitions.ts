@@ -2,6 +2,7 @@ export const shoppingToolDefinitions = [
   {
     name: 'shopping_list_get',
     description: '[SHOPPING/LIST] Get your current shopping list items.',
+    annotations: { readOnlyHint: true },
     inputSchema: {
       type: 'object' as const,
       properties: {},
@@ -60,6 +61,7 @@ export const shoppingToolDefinitions = [
     name: 'shopping_locations_get',
     description:
       '[SHOPPING/LOCATIONS] Get **retail store / shop** locations where you buy groceries (Grocy shopping locations). NOT pantry or home storage—use system_locations_get for storage location IDs (locationId). Use shopping_locations_get for storeId when adding shopping-list items or store-specific workflows.',
+    annotations: { readOnlyHint: true },
     inputSchema: {
       type: 'object' as const,
       properties: {},

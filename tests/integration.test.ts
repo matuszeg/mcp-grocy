@@ -172,7 +172,7 @@ describe('Integration Tests', () => {
             /* config */
           }),
           parseToolConfiguration: () => ({
-            allowedTools: new Set(['get_products', 'get_stock']),
+            allowedTools: new Set(['inventory_products_get', 'inventory_stock_get_all']),
             blockedTools: new Set(['delete_recipe_from_meal_plan']),
           }),
           getGrocyBaseUrl: () => 'http://test-grocy:9283',

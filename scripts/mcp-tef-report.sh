@@ -12,7 +12,7 @@
 # Env (optional):
 #   MCP_TEF_ROOT, MCP_TEF_REF, MCP_GROCY_HTTP_PORT (default 8792), MCP_TEF_REPORT_PORT (default 8020)
 #   MCP_TEF_OLLAMA_MODEL, DEFAULT_MODEL__BASE_URL / OLLAMA_BASE_URL
-#   SIMILARITY_THRESHOLD (default 0.85)
+#   SIMILARITY_THRESHOLD (default 0.9 — stricter; use 0.85 for more pairs flagged)
 #   MCP_GROCY_YAML — optional; must be named mcp-grocy.yaml. Else example is copied with all tools enabled.
 
 set -euo pipefail
@@ -24,7 +24,7 @@ GROCY_PORT="${MCP_GROCY_HTTP_PORT:-8792}"
 TEF_PORT="${MCP_TEF_REPORT_PORT:-8020}"
 MODEL="${MCP_TEF_OLLAMA_MODEL:-llama3.2:3b}"
 BASE_URL="${DEFAULT_MODEL__BASE_URL:-${OLLAMA_BASE_URL:-http://localhost:11434/v1}}"
-THRESHOLD="${SIMILARITY_THRESHOLD:-0.85}"
+THRESHOLD="${SIMILARITY_THRESHOLD:-0.9}"
 
 INCLUDE_REC=false
 RUN_QUALITY=false

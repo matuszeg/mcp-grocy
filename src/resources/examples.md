@@ -1,56 +1,50 @@
-# Grocy API Testing Examples
+# Grocy MCP usage examples
 
-## Setting Up Your Private Demo Instance
+> **MCP server name:** Your client names this server in its config (`mcp-grocy`, `grocy`, etc.). The first argument to helpers like `use_mcp_tool` must match **your** setup. Examples below use `mcp-grocy`.
 
-Before testing the API, you can create your own private Grocy demo instance:
+## Setting up a private Grocy demo
 
 1. Visit [https://demo.grocy.info](https://demo.grocy.info).
-2. Look for "Create a private demo instance" section
-3. Create your personal instance which will remain available for testing
-4. Use the provided API key and URL in your `.env` file:
+2. Use **Create a private demo instance**.
+3. Put URL and API key in `.env`:
+
    ```
    GROCY_BASE_URL=https://your-name-xxxxx.demo.grocy.info
    GROCY_API_KEY=your-private-api-key
    ```
 
-⚠️ IMPORTANT: Only provide the endpoint path - do not include full URLs. Your path will be automatically resolved to the full URL.
+For **`system_dev_call_api`** / **`system_dev_test_request`**, pass endpoint **paths** only (no full URL), e.g. `objects/products` or `/api/stock`—the client resolves them against `GROCY_BASE_URL`.
 
-For example, if the base URL is `https://your-own-demo.grocy.info`:
-✅ Correct: `"/api/objects/products"` → Resolves to: `https://your-own-demo.grocy.info/api/objects/products`
-❌ Incorrect: `"https://your-own-demo.grocy.info/api/objects/products"` or `"www.grocy.example.com/api/objects/products"`
+## Inventory and shopping
 
-## Basic API Tools
-
-### Get Current Stock
+### All stock entries
 
 ```typescript
-use_mcp_tool('grocy-api', 'get_stock', {});
+use_mcp_tool('mcp-grocy', 'inventory_stock_get_all', {});
 ```
 
-### Get Volatile Stock Information
+### Volatile stock (due / overdue / missing)
 
 ```typescript
-use_mcp_tool('grocy-api', 'get_stock_volatile', {
+use_mcp_tool('mcp-grocy', 'inventory_stock_get_volatile', {
   includeDetails: true,
 });
 ```
 
-### Get All Products
+### Products (pick fields)
 
 ```typescript
-use_mcp_tool('grocy-api', 'get_products', {});
+use_mcp_tool('mcp-grocy', 'inventory_products_get', {
+  fields: ['id', 'name', 'description'],
+});
 ```
 
-### Get All Shopping List Items
+### Shopping list
 
 ```typescript
-use_mcp_tool('grocy-api', 'get_shopping_list', {});
-```
+use_mcp_tool('mcp-grocy', 'shopping_list_get', {});
 
-### Add Item to Shopping List
-
-```typescript
-use_mcp_tool('grocy-api', 'add_shopping_list_item', {
+use_mcp_tool('mcp-grocy', 'shopping_list_add_item', {
   productId: 1,
   amount: 2,
   shoppingListId: 1,
@@ -58,170 +52,159 @@ use_mcp_tool('grocy-api', 'add_shopping_list_item', {
 });
 ```
 
-### Purchase a Product
+### Purchase (product-level)
 
 ```typescript
-use_mcp_tool('grocy-api', 'inventory_transactions_purchase', {
+use_mcp_tool('mcp-grocy', 'inventory_transactions_purchase', {
   productId: 1,
   amount: 2,
   bestBeforeDate: '2024-12-31',
   price: 3.99,
-  storeId: 1,
+  locationId: 1,
 });
 ```
 
-### Consume a Product
+### Consume one stock row (`stockId` from `inventory_stock_get_by_product`)
 
 ```typescript
-use_mcp_tool('grocy-api', 'inventory_stock_entry_consume', {
+use_mcp_tool('mcp-grocy', 'inventory_stock_entry_consume', {
+  stockId: 10,
   productId: 1,
   amount: 1,
   spoiled: false,
 });
 ```
 
-## Recipe and Meal Planning
+## Recipes and meal plan
 
-### Get All Recipes
+### List recipes (selected fields)
 
 ```typescript
-use_mcp_tool('grocy-api', 'get_recipes', {});
+use_mcp_tool('mcp-grocy', 'recipes_management_get', {
+  fields: ['id', 'name', 'description', 'base_servings'],
+});
 ```
 
-### Check Recipe Fulfillment
+### Fulfillment for one recipe
 
 ```typescript
-use_mcp_tool('grocy-api', 'get_recipe_fulfillment', {
+use_mcp_tool('mcp-grocy', 'recipes_fulfillment_get', {
   recipeId: 1,
-  servings: 2,
+  onlyMissing: false,
 });
 ```
 
-### Get Meal Plan for a Date
+### Meal plan for a date
 
 ```typescript
-use_mcp_tool('grocy-api', 'get_meal_plan', {
+use_mcp_tool('mcp-grocy', 'recipes_mealplan_get', {
   date: '2024-07-01',
+  weekly: false,
 });
 ```
 
-### Get Meal Plan Sections
+### Meal plan sections (Breakfast / Dinner / …)
 
 ```typescript
-use_mcp_tool('grocy-api', 'get_meal_plan_sections', {});
+use_mcp_tool('mcp-grocy', 'recipes_mealplan_get_sections', {});
 ```
 
-### Add Recipe to Meal Plan
+### Add recipe to meal plan
 
 ```typescript
-use_mcp_tool('grocy-api', 'add_recipe_to_meal_plan', {
+use_mcp_tool('mcp-grocy', 'recipes_mealplan_add_recipe', {
   recipeId: 1,
   day: '2024-07-01',
   servings: 2,
-  section_id: 3,
+  sectionId: 3,
 });
 ```
 
-Note: Use get_meal_plan_sections to find valid section IDs for your Grocy instance.
+Use **`recipes_mealplan_get_sections`** for valid `sectionId` values.
 
-### Delete Recipe from Meal Plan
+### Remove a meal plan entry
 
 ```typescript
-use_mcp_tool('grocy-api', 'delete_recipe_from_meal_plan', {
-  date: '2024-07-01',
-  meal_plan_entry_id: 123,
+use_mcp_tool('mcp-grocy', 'recipes_mealplan_delete_entry', {
+  mealPlanEntryId: 123,
 });
 ```
 
-Note: Use get_meal_plan to find the meal_plan_entry_id of the entry you want to remove.
+Use **`recipes_mealplan_get`** to find `mealPlanEntryId`.
 
-### Consume Recipe Ingredients
+### Cook / consume recipe ingredients
 
 ```typescript
-use_mcp_tool('grocy-api', 'consume_recipe', {
+use_mcp_tool('mcp-grocy', 'recipes_cooking_consume', {
   recipeId: 1,
   servings: 2,
 });
 ```
 
-## Chores and Tasks
+## Chores, tasks, locations
 
-### Get All Chores
+### Chores (recurring) vs tasks (to-dos)
 
 ```typescript
-use_mcp_tool('grocy-api', 'get_chores', {});
+use_mcp_tool('mcp-grocy', 'household_chores_get', {});
+use_mcp_tool('mcp-grocy', 'household_tasks_get', {});
 ```
 
-### Track Chore Execution
+### Track chore execution
 
 ```typescript
-use_mcp_tool('grocy-api', 'track_chore_execution', {
+use_mcp_tool('mcp-grocy', 'household_chores_execute', {
   choreId: 1,
   executedBy: 1,
-  tracked_time: '2024-06-30 15:30:00',
+  trackedTime: '2024-06-30 15:30:00',
 });
 ```
 
-### Get All Tasks
+### Complete a task
 
 ```typescript
-use_mcp_tool('grocy-api', 'get_tasks', {});
-```
-
-### Complete a Task
-
-```typescript
-use_mcp_tool('grocy-api', 'complete_task', {
+use_mcp_tool('mcp-grocy', 'household_tasks_complete', {
   taskId: 1,
   note: 'Task completed successfully',
 });
 ```
 
-## Locations and Organization
-
-### Get All Locations
+### Storage locations vs shopping (store) locations
 
 ```typescript
-use_mcp_tool('grocy-api', 'get_locations', {});
+use_mcp_tool('mcp-grocy', 'system_locations_get', {});
+use_mcp_tool('mcp-grocy', 'shopping_locations_get', {});
 ```
 
-### Get All Shopping Locations (Stores)
+### Transfer one stock row to another location
 
 ```typescript
-use_mcp_tool('grocy-api', 'get_shopping_locations', {});
-```
-
-### Transfer Product Between Locations
-
-```typescript
-use_mcp_tool('grocy-api', 'inventory_stock_entry_transfer', {
+use_mcp_tool('mcp-grocy', 'inventory_stock_entry_transfer', {
+  stockId: 10,
   productId: 1,
   amount: 1,
-  locationIdFrom: 1,
   locationIdTo: 2,
   note: 'Moving to kitchen',
 });
 ```
 
-## Advanced API Usage
+For moving by product without a `stockId`, use **`inventory_transactions_transfer`**.
 
-### Custom API Call
+## Advanced / escape hatches
 
-If you need to access a Grocy API endpoint not covered by the specialized tools:
+### Arbitrary Grocy API object path
 
 ```typescript
-use_mcp_tool('grocy-api', 'call_grocy_api', {
+use_mcp_tool('mcp-grocy', 'system_dev_call_api', {
   endpoint: 'objects/product_barcodes',
   method: 'GET',
 });
 ```
 
-### Raw API Testing
-
-For detailed testing with full control over the request:
+### Raw request with full diagnostics
 
 ```typescript
-use_mcp_tool('grocy-api', 'test_request', {
+use_mcp_tool('mcp-grocy', 'system_dev_test_request', {
   method: 'GET',
   endpoint: '/api/stock/products/by-barcode/1234567890',
   headers: {
@@ -230,119 +213,6 @@ use_mcp_tool('grocy-api', 'test_request', {
 });
 ```
 
-# MCP Grocy API - Endpoint Reference
+## Tool reference
 
-This document provides a comprehensive reference of all available endpoints in the MCP Grocy API.
-
-## Recipes
-
-### GET `/api/grocy/recipes`
-
-Retrieves a list of all recipes.
-
-**Response:**
-
-```json
-[
-  {
-    "id": 1,
-    "name": "Pizza",
-    "description": "Homemade pizza recipe"
-  }
-]
-```
-
-### GET `/api/grocy/recipes/:recipeId`
-
-Retrieves details of a specific recipe by ID.
-
-**Parameters:**
-
-- `recipeId`: ID of the recipe to retrieve
-
-**Response:**
-
-```json
-{
-  "id": 1,
-  "name": "Pizza",
-  "description": "Homemade pizza recipe",
-  "base_servings": 4,
-  "desired_servings": 4,
-  "preparation": "Mix ingredients and bake at 450°F"
-}
-
-### Get Recipe Fulfillment
-- **GET** `/api/grocy/recipes/:recipeId/fulfillment`
-- Returns fulfillment information for a specific recipe including:
-  - Whether ingredients are in stock
-  - Missing products count
-  - Costs
-  - Calories
-  - Due score
-
-### Get All Recipes Fulfillment
-- **GET** `/api/grocy/recipes-fulfillment`
-- Returns fulfillment information for all recipes including:
-  - Recipe ID
-  - Fulfillment status
-  - Missing products count
-  - Costs
-
-### Add Not Fulfilled Products to Shopping List
-- **POST** `/api/grocy/recipes/:recipeId/add-not-fulfilled-products-to-shoppinglist`
-- Adds all missing ingredients for a recipe to the shopping list
-- Returns the result of the operation
-
-## Stock
-
-### Get All Stock
-- **GET** `/api/grocy/stock`
-- Returns a list of all stock items
-
-### Get Stock Item by ID
-- **GET** `/api/grocy/stock/:stockId`
-- Returns details of a specific stock item
-
-## Chores
-
-### Get All Chores
-- **GET** `/api/grocy/chores`
-- Returns a list of all chores
-
-### Undo Chore Execution
-- **POST** `/api/grocy/chores/executions/:executionId/undo`
-- Undoes a chore execution
-- Returns the result of the operation
-
-## Batteries
-
-### Get All Batteries
-- **GET** `/api/grocy/batteries`
-- Returns a list of all batteries
-
-### Undo Battery Charge Cycle
-- **POST** `/api/grocy/batteries/charge-cycles/:chargeCycleId/undo`
-- Undoes a battery charge cycle
-- Returns the result of the operation
-
-## Tasks
-
-### Get All Tasks
-- **GET** `/api/grocy/tasks`
-- Returns a list of all tasks
-
-### Undo Task Completion
-- **POST** `/api/grocy/tasks/:taskId/undo`
-- Undoes a task completion
-- Returns the result of the operation
-
-## Generic Undo Endpoint
-
-### Undo Action
-- **POST** `/api/grocy/undo/:entityType/:id`
-- Unified endpoint for undoing various actions
-- `entityType` can be 'chores', 'batteries', or 'tasks'
-- `id` is the ID of the execution, charge cycle, or task
-- Returns the result of the undo operation
-```
+Authoritative names and parameters live in **`src/tools/*/definitions.ts`** in this repository. Grocy’s own HTTP API is documented at [Grocy API](https://github.com/grocy/grocy#api).

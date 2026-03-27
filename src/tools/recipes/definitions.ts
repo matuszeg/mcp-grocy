@@ -9,6 +9,7 @@ export const recipeToolDefinitions: ToolDefinition[] = [
     name: 'recipes_management_get',
     description:
       '[RECIPES/MANAGEMENT] **List/search many recipes**—you choose which fields (e.g. id+name). For one full recipe by ID use recipes_management_get_by_id.',
+    annotations: { readOnlyHint: true },
     inputSchema: {
       type: 'object',
       properties: {
@@ -40,6 +41,7 @@ export const recipeToolDefinitions: ToolDefinition[] = [
     name: 'recipes_management_get_by_id',
     description:
       '[RECIPES/MANAGEMENT] **Single recipe** by recipeId (full record). To scan or filter many recipes use recipes_management_get with a fields list.',
+    annotations: { readOnlyHint: true },
     inputSchema: {
       type: 'object',
       properties: {
@@ -100,6 +102,7 @@ export const recipeToolDefinitions: ToolDefinition[] = [
     name: 'recipes_fulfillment_get',
     description:
       '[RECIPES/FULFILLMENT] **Single recipe**—can I make this dish? Ingredient coverage vs stock for one recipeId. For an overview of many recipes at once use recipes_fulfillment_get_all.',
+    annotations: { readOnlyHint: true },
     inputSchema: {
       type: 'object',
       properties: {
@@ -121,6 +124,7 @@ export const recipeToolDefinitions: ToolDefinition[] = [
     name: 'recipes_fulfillment_get_all',
     description:
       '[RECIPES/FULFILLMENT] **All recipes**—batch view of which recipes are makeable with current stock (no recipeId). For one named recipe use recipes_fulfillment_get.',
+    annotations: { readOnlyHint: true },
     inputSchema: {
       type: 'object',
       properties: {},
@@ -133,6 +137,7 @@ export const recipeToolDefinitions: ToolDefinition[] = [
     name: 'recipes_mealplan_get',
     description:
       '[RECIPES/MEALPLAN] Get your meal plan data from Grocy instance with corresponding recipe details. Returns planned meals for the requested date plus surrounding days for context. Use this to find out what recipes/meals are planned for a specific date (e.g., "what\'s for dinner tomorrow", "recipes for today", "meal plan for next week"). The returned data includes the id field (meal plan entry ID) which can be used with recipes_mealplan_delete_entry.',
+    annotations: { readOnlyHint: true },
     inputSchema: {
       type: 'object' as const,
       properties: {
@@ -153,6 +158,7 @@ export const recipeToolDefinitions: ToolDefinition[] = [
     name: 'recipes_mealplan_get_sections',
     description:
       '[RECIPES/MEALPLAN] **Read-only:** list meal plan section names/IDs (Breakfast, Dinner, …). Does not return planned meals or dates—use recipes_mealplan_get for the calendar. Needed before recipes_mealplan_add_recipe to pick sectionId.',
+    annotations: { readOnlyHint: true },
     inputSchema: {
       type: 'object' as const,
       properties: {},

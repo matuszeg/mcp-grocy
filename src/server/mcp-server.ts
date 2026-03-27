@@ -96,7 +96,13 @@ export class GrocyMcpServer {
       const inputSchema = toolDefinitionInputZod(def);
       const registered = mcp.registerTool(
         def.name,
-        { description: def.description, inputSchema },
+        {
+          ...(def.title?.trim() ? { title: def.title.trim() } : {}),
+          description: def.description,
+          inputSchema,
+          ...(def.annotations ? { annotations: def.annotations } : {}),
+          ...(def.meta && Object.keys(def.meta).length > 0 ? { _meta: def.meta } : {}),
+        },
         async (args) => this.invokeTool(def.name, args as Record<string, unknown>),
       );
       if (!this.enabledTools.has(def.name)) {

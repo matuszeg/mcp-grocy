@@ -4,6 +4,7 @@ export const householdToolDefinitions = [
     name: 'household_chores_get',
     description:
       '[HOUSEHOLD/CHORES] List **Grocy Chores** (recurring household routines: cleaning schedule, maintenance cadence). Not the same as Tasks—use household_tasks_get for one-off to-dos.',
+    annotations: { readOnlyHint: true },
     inputSchema: {
       type: 'object' as const,
       properties: {},
@@ -45,6 +46,7 @@ export const householdToolDefinitions = [
     name: 'household_tasks_get',
     description:
       '[HOUSEHOLD/TASKS] List **Grocy Tasks** (discrete to-dos / task tracker). Not recurring Chores—use household_chores_get for scheduled recurring chores.',
+    annotations: { readOnlyHint: true },
     inputSchema: {
       type: 'object' as const,
       properties: {},
@@ -75,6 +77,7 @@ export const householdToolDefinitions = [
   {
     name: 'household_batteries_get',
     description: '[HOUSEHOLD/BATTERIES] Get all batteries from your Grocy instance.',
+    annotations: { readOnlyHint: true },
     inputSchema: {
       type: 'object' as const,
       properties: {},
@@ -145,6 +148,7 @@ export const householdToolDefinitions = [
     name: 'household_equipment_get',
     description:
       '[HOUSEHOLD/EQUIPMENT] List **equipment** assets tracked in Grocy (appliances, tools—not chore definitions). For recurring chore definitions use household_chores_get.',
+    annotations: { readOnlyHint: true },
     inputSchema: {
       type: 'object' as const,
       properties: {},

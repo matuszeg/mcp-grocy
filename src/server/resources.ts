@@ -8,20 +8,20 @@ import { fileURLToPath } from 'url';
 export const STATIC_MCP_RESOURCE_ENTRIES = [
   {
     slug: 'examples',
-    name: 'Grocy API Usage Examples',
-    description: 'Detailed examples of using the Grocy API',
+    name: 'mcp-grocy usage examples',
+    description: 'Examples of calling this MCP server’s tools against Grocy',
     mimeType: 'text/markdown' as const,
   },
   {
     slug: 'response-format',
-    name: 'Response Format Documentation',
-    description: 'Documentation of the response format and structure',
+    name: 'Tool response format',
+    description: 'How tool results and system_dev_test_request responses are shaped',
     mimeType: 'text/markdown' as const,
   },
   {
     slug: 'config',
-    name: 'Configuration Documentation',
-    description: 'Documentation of all configuration options and how to use them',
+    name: 'Configuration',
+    description: 'YAML and environment configuration for mcp-grocy',
     mimeType: 'text/markdown' as const,
   },
 ] as const;

@@ -1,6 +1,6 @@
-# MCP Grocy Configuration Guide
+# mcp-grocy configuration guide
 
-Advanced configuration reference for the MCP Grocy server. For basic setup, see the [README](../../README.md).
+Advanced configuration reference for the **mcp-grocy** npm package (this MCP server). It connects to your **Grocy** instance via `GROCY_BASE_URL` / `GROCY_API_KEY`. For basic setup, see the [README](../../README.md).
 
 ## 🔧 Configuration Variables
 

@@ -200,6 +200,8 @@ npm start
 | [📋 .env.example](.env.example)                                       | Environment configuration template | Copy and customize for your setup        |
 | [🧪 MCP Inspector](https://github.com/modelcontextprotocol/inspector) | Protocol debugging                 | Debug MCP interactions                   |
 
+**Bundled MCP resources** (from `resources/list`): `mcp-grocy://examples`, `mcp-grocy://response-format`, `mcp-grocy://config` — markdown docs shipped with the server. The URI scheme matches **`package.json` `name`** (previously some builds used `grocy-api://…`; update pinned URIs in clients or prompts if you relied on that).
+
 ### 🆘 Troubleshooting
 
 #### Common Issues
@@ -313,7 +315,9 @@ Writes under `reports/mcp-tef/<timestamp>/`:
 
 Uses ephemeral ports **8792** (mcp-grocy) and **8020** (mcp-tef) by default (`MCP_GROCY_HTTP_PORT`, `MCP_TEF_REPORT_PORT` to override). If you do not set `MCP_GROCY_YAML`, the script drops a temporary `mcp-grocy.yaml` next to the report by copying `mcp-grocy.yaml.example` with every `enabled: false` flipped to `true`, so `tools/list` is complete for analysis.
 
-Add `--with-recommendations` for LLM suggestions on flagged pairs, or `--quality` for per-tool quality scoring (slow; both need Ollama). The report calls mcp-tef’s similarity API with **`transport: sse`** against `/mcp/sse` (current [mcp-tef](https://github.com/StacklokLabs/mcp-tef) request shape).
+Add `--with-recommendations` for LLM suggestions on flagged pairs, or `--quality` for per-tool quality scoring (slow; both need Ollama). The report calls mcp-tef’s similarity API with **`transport: sse`** against `/mcp/sse` (current [mcp-tef](https://github.com/StacklokLabs/mcp-tef) request shape). Default similarity threshold is **0.9** (set `SIMILARITY_THRESHOLD=0.85` for the previous, noisier report).
+
+Optional per-tool **`title`** and **`meta`** (→ MCP `_meta`) can be set in definitions when they add real signal; otherwise clients use **`name`** only.
 
 ### Debugging
 

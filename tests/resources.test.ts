@@ -44,21 +44,21 @@ describe('ResourceHandler', () => {
       expect(result).toEqual({
         resources: [
           {
-            uri: 'grocy-api://examples',
-            name: 'Grocy API Usage Examples',
-            description: 'Detailed examples of using the Grocy API',
+            uri: 'mcp-grocy://examples',
+            name: 'mcp-grocy usage examples',
+            description: 'Examples of calling this MCP server’s tools against Grocy',
             mimeType: 'text/markdown',
           },
           {
-            uri: 'grocy-api://response-format',
-            name: 'Response Format Documentation',
-            description: 'Documentation of the response format and structure',
+            uri: 'mcp-grocy://response-format',
+            name: 'Tool response format',
+            description: 'How tool results and system_dev_test_request responses are shaped',
             mimeType: 'text/markdown',
           },
           {
-            uri: 'grocy-api://config',
-            name: 'Configuration Documentation',
-            description: 'Documentation of all configuration options and how to use them',
+            uri: 'mcp-grocy://config',
+            name: 'Configuration',
+            description: 'YAML and environment configuration for mcp-grocy',
             mimeType: 'text/markdown',
           },
         ],
@@ -71,14 +71,14 @@ describe('ResourceHandler', () => {
       const mockContent = '# Test Resource\n\nThis is a test markdown content.';
       mockFs.readFile.mockResolvedValue(mockContent);
 
-      const result = await resourceHandler.readResource('grocy-api://config');
+      const result = await resourceHandler.readResource('mcp-grocy://config');
 
       expect(mockPath.join).toHaveBeenCalledWith('/mocked/server', '../resources', 'config.md');
       expect(mockFs.readFile).toHaveBeenCalledWith('/mocked/server/../resources/config.md', 'utf8');
       expect(result).toEqual({
         contents: [
           {
-            uri: 'grocy-api://config',
+            uri: 'mcp-grocy://config',
             mimeType: 'text/markdown',
             text: mockContent,
           },
@@ -94,7 +94,7 @@ describe('ResourceHandler', () => {
       );
     });
 
-    it('should handle non-grocy-api URI', async () => {
+    it('should handle non-mcp-grocy URI', async () => {
       await expect(resourceHandler.readResource('other-service://config')).rejects.toThrow(
         McpError,
       );
@@ -103,11 +103,11 @@ describe('ResourceHandler', () => {
     it('should handle file not found', async () => {
       mockFs.readFile.mockRejectedValue(new Error('ENOENT: no such file'));
 
-      await expect(resourceHandler.readResource('grocy-api://nonexistent')).rejects.toThrow(
+      await expect(resourceHandler.readResource('mcp-grocy://nonexistent')).rejects.toThrow(
         McpError,
       );
 
-      await expect(resourceHandler.readResource('grocy-api://nonexistent')).rejects.toThrow(
+      await expect(resourceHandler.readResource('mcp-grocy://nonexistent')).rejects.toThrow(
         'Resource not found: nonexistent',
       );
     });
@@ -115,9 +115,9 @@ describe('ResourceHandler', () => {
     it('should handle file read errors gracefully', async () => {
       mockFs.readFile.mockRejectedValue(new Error('Permission denied'));
 
-      await expect(resourceHandler.readResource('grocy-api://examples')).rejects.toThrow(McpError);
+      await expect(resourceHandler.readResource('mcp-grocy://examples')).rejects.toThrow(McpError);
 
-      await expect(resourceHandler.readResource('grocy-api://examples')).rejects.toThrow(
+      await expect(resourceHandler.readResource('mcp-grocy://examples')).rejects.toThrow(
         'Resource not found: examples',
       );
     });
@@ -126,7 +126,7 @@ describe('ResourceHandler', () => {
       const mockContent = 'Mock content';
       mockFs.readFile.mockResolvedValue(mockContent);
 
-      await resourceHandler.readResource('grocy-api://response-format');
+      await resourceHandler.readResource('mcp-grocy://response-format');
 
       expect(mockPath.join).toHaveBeenCalledWith(
         '/mocked/server',
@@ -143,9 +143,9 @@ describe('ResourceHandler', () => {
 
       // Test valid URIs (should not throw URI format errors)
       const validUris = [
-        'grocy-api://config',
-        'grocy-api://examples',
-        'grocy-api://response-format',
+        'mcp-grocy://config',
+        'mcp-grocy://examples',
+        'mcp-grocy://response-format',
       ];
 
       for (const uri of validUris) {
@@ -154,7 +154,7 @@ describe('ResourceHandler', () => {
 
       // Test invalid URIs (should throw URI format errors)
       const invalidUris = [
-        'grocy-api://',
+        'mcp-grocy://',
         'wrong-service://config',
         'http://example.com',
         'config',
@@ -169,11 +169,11 @@ describe('ResourceHandler', () => {
     });
 
     it('should reject unknown resources and traversal attempts', async () => {
-      await expect(resourceHandler.readResource('grocy-api://some-other-resource')).rejects.toThrow(
+      await expect(resourceHandler.readResource('mcp-grocy://some-other-resource')).rejects.toThrow(
         'Resource not found: some-other-resource',
       );
 
-      await expect(resourceHandler.readResource('grocy-api://../config')).rejects.toThrow(
+      await expect(resourceHandler.readResource('mcp-grocy://../config')).rejects.toThrow(
         'Resource not found: ../config',
       );
     });

@@ -1,8 +1,8 @@
 # Grocy API Response Format Documentation
 
-The Grocy API testing tool (`test_request`) returns a comprehensive JSON response containing request details, response information, and validation results. Other specialized Grocy tools (e.g., `get_stock`, `add_shopping_list_item`) return the direct JSON response from the Grocy API, which is then stringified.
+The dev tool **`system_dev_test_request`** returns a JSON payload with request details, response information, and validation results. Other tools (e.g. `inventory_stock_get_all`, `shopping_list_add_item`) return the Grocy API body as text content (typically stringified JSON).
 
-## `test_request` Tool Response Structure
+## `system_dev_test_request` tool response structure
 
 ```json
 {
@@ -72,7 +72,7 @@ GROCY_API_KEY=your-private-api-key
 
 These values can be set in your `.env` file for local development or in your project configuration for production use.
 
-## Response Fields for `test_request`
+## Response Fields for `system_dev_test_request`
 
 ### Request Details (`request`)
 
@@ -102,9 +102,9 @@ These values can be set in your `.env` file for local development or in your pro
 
 ## Specialized Grocy Tools Response Format
 
-Tools like `get_stock`, `get_products`, `add_shopping_list_item`, etc., directly return the JSON response from the Grocy API, stringified within the MCP tool response content.
+Tools like `inventory_stock_get_all`, `inventory_products_get`, `shopping_list_add_item`, etc., return the Grocy API response as MCP text content (usually stringified JSON).
 
-Example for `get_product` (if it existed as a specialized tool for a single product):
+Example shape for a product-related read (illustrative):
 
 ```json
 {
@@ -136,9 +136,9 @@ If an error occurs with a specialized tool, the response will typically look lik
 }
 ```
 
-## Error Response Example for `test_request`
+## Error response example for `system_dev_test_request`
 
-If the `test_request` tool encounters an API error (e.g., authentication failure):
+If **`system_dev_test_request`** encounters an API error (e.g., authentication failure):
 
 ```json
 {

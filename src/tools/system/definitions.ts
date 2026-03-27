@@ -6,6 +6,7 @@ export const systemToolDefinitions = [
     name: 'system_locations_get',
     description:
       '[SYSTEM/LOCATIONS] Get **home storage / stock** locations (freezer, pantry, fridge—where inventory lives). NOT retail stores—use shopping_locations_get for shop/store IDs (storeId). Use this for locationId on stock, transfers, and purchases.',
+    annotations: { readOnlyHint: true },
     inputSchema: {
       type: 'object' as const,
       properties: {},
@@ -15,6 +16,7 @@ export const systemToolDefinitions = [
   {
     name: 'system_units_get',
     description: '[SYSTEM/UNITS] Get all quantity units from your Grocy instance.',
+    annotations: { readOnlyHint: true },
     inputSchema: {
       type: 'object' as const,
       properties: {},
@@ -24,6 +26,7 @@ export const systemToolDefinitions = [
   {
     name: 'system_users_get',
     description: '[SYSTEM/USERS] Get all users from your Grocy instance.',
+    annotations: { readOnlyHint: true },
     inputSchema: {
       type: 'object' as const,
       properties: {},
