@@ -53,7 +53,8 @@ export const inventoryToolDefinitions: ToolDefinition[] = [
   },
   {
     name: 'inventory_products_get_groups',
-    description: '[INVENTORY/PRODUCTS] Get all product groups from your Grocy instance.',
+    description:
+      '[INVENTORY/PRODUCTS] **Categories only:** list product groups (taxonomy), not individual products. For product rows with fields use inventory_products_get.',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -81,7 +82,7 @@ export const inventoryToolDefinitions: ToolDefinition[] = [
   {
     name: 'inventory_stock_get_all',
     description:
-      '[INVENTORY/STOCK] Get all stock entries from every location in your Grocy instance. This returns the complete stock database with detailed information including stock entry IDs.',
+      '[INVENTORY/STOCK] **Full stock dump**—every stock entry in the home with stockIds. Prefer inventory_stock_get_by_product when the user names one product; prefer inventory_stock_get_by_location when they name one storage place.',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -91,7 +92,7 @@ export const inventoryToolDefinitions: ToolDefinition[] = [
   {
     name: 'inventory_stock_get_by_product',
     description:
-      '[INVENTORY/STOCK] Get stock entries for a specific product in your Grocy instance with filtered essential information.',
+      '[INVENTORY/STOCK] Stock rows for **one product** across locations (needs productId). Use when the user asks how much of a product is on hand or needs stockId for that product—not for everything in a cupboard (use inventory_stock_get_by_location).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -122,7 +123,7 @@ export const inventoryToolDefinitions: ToolDefinition[] = [
   {
     name: 'inventory_stock_get_by_location',
     description:
-      '[INVENTORY/STOCK] Get stock entries from a specific location in your Grocy instance.',
+      '[INVENTORY/STOCK] Everything stocked in **one storage location** (needs locationId from system_locations_get). Use when the user asks what is in the freezer/pantry—not for one named product across sites (use inventory_stock_get_by_product).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -139,7 +140,7 @@ export const inventoryToolDefinitions: ToolDefinition[] = [
   {
     name: 'inventory_transactions_purchase',
     description:
-      '[INVENTORY/TRANSACTIONS] Add a product to stock (purchase/add inventory). Use inventory_products_get to find the product ID and system_locations_get to find location IDs.',
+      '[INVENTORY/TRANSACTIONS] **Product-level purchase:** add quantity by productId (creates/merges stock). No stockId. Use inventory_products_get and system_locations_get for IDs.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -178,7 +179,7 @@ export const inventoryToolDefinitions: ToolDefinition[] = [
   {
     name: 'inventory_transactions_consume',
     description:
-      '[INVENTORY/TRANSACTIONS] Remove a product from stock (consume/use inventory). For more granular control over specific stock entries, prefer inventory_stock_entry_consume. Use inventory_products_get to find the product ID.',
+      '[INVENTORY/TRANSACTIONS] **Product-level consume:** reduce stock by productId+amount (Grocy picks lots). If the user refers to a specific package/stock row, use inventory_stock_entry_consume (stockId). Use inventory_products_get for productId.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -213,7 +214,7 @@ export const inventoryToolDefinitions: ToolDefinition[] = [
   {
     name: 'inventory_transactions_transfer',
     description:
-      '[INVENTORY/TRANSACTIONS] Transfer a product between locations. For more granular control over specific stock entries, prefer inventory_stock_entry_transfer. Use inventory_products_get to find the product ID and system_locations_get to find location IDs.',
+      '[INVENTORY/TRANSACTIONS] **Product-level transfer:** move amount of a product between locations without choosing a stock row. For one specific lot, use inventory_stock_entry_transfer (stockId). Use inventory_products_get and system_locations_get.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -282,7 +283,7 @@ export const inventoryToolDefinitions: ToolDefinition[] = [
   {
     name: 'inventory_transactions_open',
     description:
-      '[INVENTORY/TRANSACTIONS] Mark a product as opened/started. For more granular control over specific stock entries, prefer inventory_stock_entry_open. Use inventory_products_get to find the product ID.',
+      '[INVENTORY/TRANSACTIONS] **Product-level open:** mark opened/started without a stock row. For one specific package use inventory_stock_entry_open (stockId). Use inventory_products_get for productId.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -362,7 +363,7 @@ export const inventoryToolDefinitions: ToolDefinition[] = [
   {
     name: 'inventory_stock_entry_consume',
     description:
-      '[INVENTORY/STOCK] Consume from a specific stock entry. Use inventory_stock_get_by_product to find specific stockId values.',
+      '[INVENTORY/STOCK] **Specific stock row (stockId):** consume from one lot. If the user only names a product/amount without a particular package, use inventory_transactions_consume instead. Find stockId via inventory_stock_get_by_product.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -396,7 +397,7 @@ export const inventoryToolDefinitions: ToolDefinition[] = [
   {
     name: 'inventory_stock_entry_transfer',
     description:
-      '[INVENTORY/STOCK] Transfer a specific stock entry to another location. Use inventory_stock_get_by_product to find specific stockId values.',
+      '[INVENTORY/STOCK] **Specific stock row (stockId):** move one lot to another location. For moving an amount of a product without picking a row, use inventory_transactions_transfer. Find stockId via inventory_stock_get_by_product.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -429,7 +430,7 @@ export const inventoryToolDefinitions: ToolDefinition[] = [
   {
     name: 'inventory_stock_entry_open',
     description:
-      '[INVENTORY/STOCK] Mark a specific stock entry as opened. Use inventory_stock_get_by_product to find specific stockId values.',
+      '[INVENTORY/STOCK] **Specific stock row (stockId):** mark one opened package. For product-level open without a row, use inventory_transactions_open. Find stockId via inventory_stock_get_by_product.',
     inputSchema: {
       type: 'object',
       properties: {

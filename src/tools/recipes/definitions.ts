@@ -8,7 +8,7 @@ export const recipeToolDefinitions: ToolDefinition[] = [
   {
     name: 'recipes_management_get',
     description:
-      '[RECIPES/MANAGEMENT] Get specific fields for all recipes from your Grocy instance. You must specify which fields to retrieve.',
+      '[RECIPES/MANAGEMENT] **List/search many recipes**—you choose which fields (e.g. id+name). For one full recipe by ID use recipes_management_get_by_id.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -38,7 +38,8 @@ export const recipeToolDefinitions: ToolDefinition[] = [
   },
   {
     name: 'recipes_management_get_by_id',
-    description: '[RECIPES/MANAGEMENT] Get a specific recipe by its ID from your Grocy instance.',
+    description:
+      '[RECIPES/MANAGEMENT] **Single recipe** by recipeId (full record). To scan or filter many recipes use recipes_management_get with a fields list.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -98,7 +99,7 @@ export const recipeToolDefinitions: ToolDefinition[] = [
   {
     name: 'recipes_fulfillment_get',
     description:
-      '[RECIPES/FULFILLMENT] Check fulfillment status for a specific recipe (what ingredients are available vs needed).',
+      '[RECIPES/FULFILLMENT] **Single recipe**—can I make this dish? Ingredient coverage vs stock for one recipeId. For an overview of many recipes at once use recipes_fulfillment_get_all.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -119,7 +120,7 @@ export const recipeToolDefinitions: ToolDefinition[] = [
   {
     name: 'recipes_fulfillment_get_all',
     description:
-      '[RECIPES/FULFILLMENT] Get fulfillment status for all recipes (overview of which recipes can be made with current stock).',
+      '[RECIPES/FULFILLMENT] **All recipes**—batch view of which recipes are makeable with current stock (no recipeId). For one named recipe use recipes_fulfillment_get.',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -151,7 +152,7 @@ export const recipeToolDefinitions: ToolDefinition[] = [
   {
     name: 'recipes_mealplan_get_sections',
     description:
-      '[RECIPES/MEALPLAN] Get all available meal plan sections from your Grocy instance (e.g., Breakfast, Lunch, Dinner, Snacks). Use this to find valid section IDs for recipes_mealplan_add_recipe.',
+      '[RECIPES/MEALPLAN] **Read-only:** list meal plan section names/IDs (Breakfast, Dinner, …). Does not return planned meals or dates—use recipes_mealplan_get for the calendar. Needed before recipes_mealplan_add_recipe to pick sectionId.',
     inputSchema: {
       type: 'object' as const,
       properties: {},
@@ -161,7 +162,7 @@ export const recipeToolDefinitions: ToolDefinition[] = [
   {
     name: 'recipes_mealplan_add_recipe',
     description:
-      '[RECIPES/MEALPLAN] Add a recipe to the meal plan for a specific date and meal section. Use recipes_management_get to find recipe IDs and recipes_mealplan_get_sections to find valid section IDs and their names.',
+      '[RECIPES/MEALPLAN] **Write:** put a recipe on the calendar (date + section + servings). Not for listing sections (recipes_mealplan_get_sections) or viewing the plan (recipes_mealplan_get).',
     inputSchema: {
       type: 'object' as const,
       properties: {
@@ -231,7 +232,8 @@ export const recipeToolDefinitions: ToolDefinition[] = [
   // ==================== SHOPPING INTEGRATION ====================
   {
     name: 'recipes_shopping_add_all_products',
-    description: '[RECIPES/SHOPPING] Add all products from a recipe to the shopping list.',
+    description:
+      '[RECIPES/SHOPPING] Add **every** recipe ingredient to the shopping list (ignores what you already have). For only what you are short on use recipes_shopping_add_missing_products.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -247,7 +249,7 @@ export const recipeToolDefinitions: ToolDefinition[] = [
   {
     name: 'recipes_shopping_add_missing_products',
     description:
-      '[RECIPES/SHOPPING] Add only the missing/insufficient products from a recipe to the shopping list (based on current stock levels).',
+      '[RECIPES/SHOPPING] Add **only missing or insufficient** ingredients (compares to stock). To add the full ingredient set regardless of stock use recipes_shopping_add_all_products.',
     inputSchema: {
       type: 'object',
       properties: {

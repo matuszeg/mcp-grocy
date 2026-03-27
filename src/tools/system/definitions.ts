@@ -5,7 +5,7 @@ export const systemToolDefinitions = [
   {
     name: 'system_locations_get',
     description:
-      '[SYSTEM/LOCATIONS] Get all storage locations from your Grocy instance. Use this to find location IDs and names when working with other tools that require locationId parameters.',
+      '[SYSTEM/LOCATIONS] Get **home storage / stock** locations (freezer, pantry, fridge—where inventory lives). NOT retail stores—use shopping_locations_get for shop/store IDs (storeId). Use this for locationId on stock, transfers, and purchases.',
     inputSchema: {
       type: 'object' as const,
       properties: {},

@@ -59,7 +59,7 @@ export const shoppingToolDefinitions = [
   {
     name: 'shopping_locations_get',
     description:
-      '[SHOPPING/LOCATIONS] Get all shopping locations (stores) from your Grocy instance. Use this to find store IDs and names when working with tools that require storeId parameters.',
+      '[SHOPPING/LOCATIONS] Get **retail store / shop** locations where you buy groceries (Grocy shopping locations). NOT pantry or home storage—use system_locations_get for storage location IDs (locationId). Use shopping_locations_get for storeId when adding shopping-list items or store-specific workflows.',
     inputSchema: {
       type: 'object' as const,
       properties: {},
