@@ -4,6 +4,7 @@
 
 import { ValidationHelpers } from '../validation-helpers.js';
 import { type SubConfigValidator } from '../types.js';
+import { ValidationError } from '../../utils/errors.js';
 
 /**
  * Validation function for complete tool sub-configurations
@@ -23,8 +24,9 @@ export const validateCompleteSubConfigs: SubConfigValidator = (subConfigs: Map<s
 
   // Business logic validation
   if (allowNoMealPlan && allowMealPlanEntryAlreadyDone) {
-    throw new Error(
+    throw new ValidationError(
       'allow_no_meal_plan and allow_meal_plan_entry_already_done cannot both be true - they are mutually exclusive modes',
+      'complete sub-config',
     );
   }
 

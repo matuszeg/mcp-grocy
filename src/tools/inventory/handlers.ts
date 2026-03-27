@@ -1,5 +1,6 @@
 import { BaseToolHandler } from '../base.js';
 import { ToolResult, ToolHandler } from '../types.js';
+import { ValidationError } from '../../utils/errors.js';
 import Fuse from 'fuse.js';
 
 export class InventoryToolHandlers extends BaseToolHandler {
@@ -330,12 +331,16 @@ export class InventoryToolHandlers extends BaseToolHandler {
 
       const stockEntryResponse = await this.apiCall(`/stock/entry/${stockId}`);
       if (!stockEntryResponse || !stockEntryResponse.product_id) {
-        throw new Error(`Could not resolve product ID from stock entry ${stockId}`);
+        throw new ValidationError(
+          `Could not resolve product ID from stock entry ${stockId}`,
+          'printStockEntryLabel',
+        );
       }
 
       if (stockEntryResponse.product_id !== productId) {
-        throw new Error(
+        throw new ValidationError(
           `Product ID mismatch: stock entry ${stockId} belongs to product ${stockEntryResponse.product_id}, but ${productId} was provided`,
+          'printStockEntryLabel',
         );
       }
 
@@ -356,7 +361,7 @@ export class InventoryToolHandlers extends BaseToolHandler {
     if (stockAmounts.length === 1) {
       const amount = stockAmounts[0];
       if (typeof amount !== 'number' || amount <= 0) {
-        throw new Error(`Invalid amount: ${amount}`);
+        throw new ValidationError(`Invalid amount: ${amount}`, 'splitStockEntry');
       }
       const note = `${originalEntry.note || ''} - ${originalEntry.id} - 1`;
       await this.apiCall(`/stock/entry/${originalEntry.id}`, 'PUT', {
@@ -377,7 +382,7 @@ export class InventoryToolHandlers extends BaseToolHandler {
       for (let i = 0; i < stockAmounts.length; i++) {
         const amount = stockAmounts[i];
         if (typeof amount !== 'number' || amount <= 0) {
-          throw new Error(`Invalid amount at index ${i}: ${amount}`);
+          throw new ValidationError(`Invalid amount at index ${i}: ${amount}`, 'splitStockEntry');
         }
         const note = `${originalEntry.note || ''} - ${originalEntry.id} - ${i + 1}`;
 
@@ -420,8 +425,9 @@ export class InventoryToolHandlers extends BaseToolHandler {
           );
 
           if (!actualStockEntry) {
-            throw new Error(
+            throw new ValidationError(
               `Could not find created stock entry with product_id ${originalEntry.product_id} and stock_id ${stockId}`,
+              'splitStockEntry',
             );
           }
 
@@ -445,12 +451,16 @@ export class InventoryToolHandlers extends BaseToolHandler {
 
       const stockEntryResponse = await this.apiCall(`/stock/entry/${stockId}`);
       if (!stockEntryResponse || !stockEntryResponse.product_id) {
-        throw new Error(`Could not resolve product ID from stock entry ${stockId}`);
+        throw new ValidationError(
+          `Could not resolve product ID from stock entry ${stockId}`,
+          'consumeStockEntry',
+        );
       }
 
       if (stockEntryResponse.product_id !== productId) {
-        throw new Error(
+        throw new ValidationError(
           `Product ID mismatch: stock entry ${stockId} belongs to product ${stockEntryResponse.product_id}, but ${productId} was provided`,
+          'consumeStockEntry',
         );
       }
 
@@ -484,12 +494,16 @@ export class InventoryToolHandlers extends BaseToolHandler {
 
       const stockEntryResponse = await this.apiCall(`/stock/entry/${stockId}`);
       if (!stockEntryResponse || !stockEntryResponse.product_id) {
-        throw new Error(`Could not resolve product ID from stock entry ${stockId}`);
+        throw new ValidationError(
+          `Could not resolve product ID from stock entry ${stockId}`,
+          'transferStockEntry',
+        );
       }
 
       if (stockEntryResponse.product_id !== productId) {
-        throw new Error(
+        throw new ValidationError(
           `Product ID mismatch: stock entry ${stockId} belongs to product ${stockEntryResponse.product_id}, but ${productId} was provided`,
+          'transferStockEntry',
         );
       }
 
@@ -519,12 +533,16 @@ export class InventoryToolHandlers extends BaseToolHandler {
 
       const stockEntryResponse = await this.apiCall(`/stock/entry/${stockId}`);
       if (!stockEntryResponse || !stockEntryResponse.product_id) {
-        throw new Error(`Could not resolve product ID from stock entry ${stockId}`);
+        throw new ValidationError(
+          `Could not resolve product ID from stock entry ${stockId}`,
+          'openStockEntry',
+        );
       }
 
       if (stockEntryResponse.product_id !== productId) {
-        throw new Error(
+        throw new ValidationError(
           `Product ID mismatch: stock entry ${stockId} belongs to product ${stockEntryResponse.product_id}, but ${productId} was provided`,
+          'openStockEntry',
         );
       }
 

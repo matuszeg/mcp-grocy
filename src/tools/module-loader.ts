@@ -103,7 +103,7 @@ export class ModuleLoader {
       // Find tool module export
       for (const [, exportValue] of Object.entries(moduleIndex)) {
         if (this.isToolModule(exportValue)) {
-          moduleInfo.toolModule = exportValue as ToolModule;
+          moduleInfo.toolModule = exportValue;
           moduleInfo.loaded = true;
           break;
         }
@@ -125,13 +125,16 @@ export class ModuleLoader {
   /**
    * Check if an export looks like a ToolModule
    */
-  private static isToolModule(obj: any): boolean {
+  private static isToolModule(obj: unknown): obj is ToolModule {
+    if (obj === null || typeof obj !== 'object') {
+      return false;
+    }
+    const m = obj as Record<string, unknown>;
     return (
-      obj &&
-      typeof obj === 'object' &&
-      Array.isArray(obj.definitions) &&
-      typeof obj.handlers === 'object' &&
-      obj.definitions.length > 0
+      Array.isArray(m.definitions) &&
+      m.definitions.length > 0 &&
+      typeof m.handlers === 'object' &&
+      m.handlers !== null
     );
   }
 

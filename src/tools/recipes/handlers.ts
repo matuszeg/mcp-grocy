@@ -6,6 +6,7 @@
 import { BaseToolHandler } from '../base.js';
 import { ToolResult, ToolHandler } from '../types.js';
 import { InventoryToolHandlers } from '../inventory/handlers.js';
+import { ValidationError } from '../../utils/errors.js';
 
 const RECIPES_COOKING_COMPLETE_TOOL = 'recipes_cooking_complete';
 
@@ -213,7 +214,7 @@ export class RecipeToolHandlers extends BaseToolHandler {
 
       const targetDate = new Date(date);
       if (isNaN(targetDate.getTime())) {
-        throw new Error('Invalid date format. Use YYYY-MM-DD.');
+        throw new ValidationError('Invalid date format. Use YYYY-MM-DD.', 'getMealPlan');
       }
 
       const datesToQuery: Date[] = [];
@@ -462,30 +463,43 @@ export class RecipeToolHandlers extends BaseToolHandler {
 
       // Validate parameters based on configuration
       if (!allowNoMealPlan && !mealPlanEntryId) {
-        throw new Error('mealPlanEntryId is required when allow_no_meal_plan is false.');
+        throw new ValidationError(
+          'mealPlanEntryId is required when allow_no_meal_plan is false.',
+          'recipes_cooking_complete',
+        );
       }
 
       if (allowNoMealPlan && !recipeId) {
-        throw new Error('recipeId is required when allow_no_meal_plan is true.');
+        throw new ValidationError(
+          'recipeId is required when allow_no_meal_plan is true.',
+          'recipes_cooking_complete',
+        );
       }
 
       if (allowNoMealPlan && mealPlanEntryId) {
-        throw new Error(
+        throw new ValidationError(
           'mealPlanEntryId should not be provided when allow_no_meal_plan is true. Use recipeId instead.',
+          'recipes_cooking_complete',
         );
       }
 
       this.validateRequired({ stockAmounts }, ['stockAmounts']);
 
       if (!Array.isArray(stockAmounts) || stockAmounts.length === 0) {
-        throw new Error('stockAmounts must be a non-empty array of serving amounts.');
+        throw new ValidationError(
+          'stockAmounts must be a non-empty array of serving amounts.',
+          'recipes_cooking_complete',
+        );
       }
 
       // Validate all stock amounts are positive numbers
       for (let i = 0; i < stockAmounts.length; i++) {
         const amount = stockAmounts[i]!;
         if (typeof amount !== 'number' || amount <= 0) {
-          throw new Error(`stockAmounts[${i}] must be a positive number, got: ${amount}`);
+          throw new ValidationError(
+            `stockAmounts[${i}] must be a positive number, got: ${amount}`,
+            'recipes_cooking_complete',
+          );
         }
       }
 
@@ -508,12 +522,16 @@ export class RecipeToolHandlers extends BaseToolHandler {
         const mealPlanEntry = await this.apiCall(`/objects/meal_plan/${mealPlanEntryId}`);
 
         if (!mealPlanEntry) {
-          throw new Error(`Meal plan entry ${mealPlanEntryId} not found.`);
+          throw new ValidationError(
+            `Meal plan entry ${mealPlanEntryId} not found.`,
+            'recipes_cooking_complete',
+          );
         }
 
         if (mealPlanEntry.done == 1 && !allowMealPlanEntryAlreadyDone) {
-          throw new Error(
+          throw new ValidationError(
             `Meal plan entry ${mealPlanEntryId} is already marked as done. Cannot mark as cooked again.`,
+            'recipes_cooking_complete',
           );
         }
 
@@ -542,8 +560,9 @@ export class RecipeToolHandlers extends BaseToolHandler {
         });
 
         if (!Array.isArray(shadowRecipes) || shadowRecipes.length === 0) {
-          throw new Error(
+          throw new ValidationError(
             `Mealplan shadow recipe '${mealplanShadow}' not found. Cannot consume ingredients.`,
+            'recipes_cooking_complete',
           );
         }
 

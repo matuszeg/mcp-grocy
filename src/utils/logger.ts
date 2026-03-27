@@ -98,11 +98,7 @@ export class Logger {
     const formattedMessage = this.formatMessage(entry);
 
     // Use stderr for all logs to avoid interfering with MCP stdio protocol
-    if (level <= LogLevel.ERROR) {
-      console.error(formattedMessage);
-    } else {
-      console.error(formattedMessage);
-    }
+    console.error(formattedMessage);
   }
 
   public error(message: string, category?: string, data?: any): void {
