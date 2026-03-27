@@ -147,8 +147,7 @@ describe('ResourceHandler', () => {
       const validUris = [
         'grocy-api://config',
         'grocy-api://examples', 
-        'grocy-api://response-format',
-        'grocy-api://some-other-resource'
+        'grocy-api://response-format'
       ];
 
       for (const uri of validUris) {
@@ -168,6 +167,14 @@ describe('ResourceHandler', () => {
         await expect(resourceHandler.readResource(uri))
           .rejects.toThrow('Invalid resource URI format');
       }
+    });
+
+    it('should reject unknown resources and traversal attempts', async () => {
+      await expect(resourceHandler.readResource('grocy-api://some-other-resource'))
+        .rejects.toThrow('Resource not found: some-other-resource');
+
+      await expect(resourceHandler.readResource('grocy-api://../config'))
+        .rejects.toThrow('Resource not found: ../config');
     });
   });
 });

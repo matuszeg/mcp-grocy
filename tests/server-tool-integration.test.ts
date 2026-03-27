@@ -62,22 +62,18 @@ describe('Server Tool Integration', () => {
   });
 
   it('should match tool configuration validation logic', async () => {
-    // This test reproduces the exact validation logic from the server
     const toolRegistry = await createToolRegistry();
     const { enabledTools } = config.parseToolConfiguration();
-    
-    // Validate tool names exactly like the server does
     const validToolNames = new Set(toolRegistry.getToolNames());
-    
+
     if (enabledTools.size > 0) {
       const invalidTools = Array.from(enabledTools).filter(tool => !validToolNames.has(tool));
-      
+
       if (invalidTools.length > 0) {
         const validNames = Array.from(validToolNames).sort().join(', ');
         console.log(`Invalid tools: ${invalidTools.join(', ')}. Valid: ${validNames}`);
       }
-      
-      // This should pass if the server would start successfully
+
       expect(invalidTools).toEqual([]);
     }
   });

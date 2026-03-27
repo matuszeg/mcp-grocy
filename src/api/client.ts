@@ -24,7 +24,6 @@ export interface ApiResponse<T = any> {
 
 export class GrocyApiClient {
   private axiosInstance: AxiosInstance;
-  private readonly API_KEY_HEADER = 'GROCY-API-KEY';
 
   constructor() {
     this.axiosInstance = this.createAxiosInstance();
@@ -36,15 +35,11 @@ export class GrocyApiClient {
       baseURL: config.grocy.base_url,
       validateStatus: () => true, // Handle all status codes manually
       timeout: 30000,
+      maxContentLength: config.grocy.max_response_bytes,
       httpsAgent: config.grocy.enable_ssl_verify ? undefined : new https.Agent({
         rejectUnauthorized: false
       })
     });
-
-    // Set default authentication
-    if (config.grocy.api_key) {
-      instance.defaults.headers.common[this.API_KEY_HEADER] = config.grocy.api_key;
-    }
 
     return instance;
   }

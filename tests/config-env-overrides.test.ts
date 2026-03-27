@@ -199,6 +199,60 @@ tools:
     });
   });
 
+  describe('HTTP_CORS_ORIGIN override', () => {
+    it('should override CORS origin when env var provided', () => {
+      process.env.HTTP_CORS_ORIGIN = 'http://localhost:5173';
+
+      const config = (() => {
+        const ConfigManagerClass = ConfigManager as any;
+        return new ConfigManagerClass(tempConfigPath);
+      })();
+      const { yaml } = config.getConfig();
+
+      expect(yaml.server.http_cors_origin).toBe('http://localhost:5173');
+    });
+  });
+
+  describe('MCP_HTTP_ACCESS_TOKEN override', () => {
+    it('should set http_access_token from environment', () => {
+      process.env.MCP_HTTP_ACCESS_TOKEN = 'secret-mcp-token';
+
+      const config = (() => {
+        const ConfigManagerClass = ConfigManager as any;
+        return new ConfigManagerClass(tempConfigPath);
+      })();
+      const { yaml } = config.getConfig();
+
+      expect(yaml.server.http_access_token).toBe('secret-mcp-token');
+    });
+
+    it('should clear http_access_token when env is empty string', () => {
+      process.env.MCP_HTTP_ACCESS_TOKEN = '';
+
+      const config = (() => {
+        const ConfigManagerClass = ConfigManager as any;
+        return new ConfigManagerClass(tempConfigPath);
+      })();
+      const { yaml } = config.getConfig();
+
+      expect(yaml.server.http_access_token).toBeUndefined();
+    });
+  });
+
+  describe('GROCY_MAX_RESPONSE_BYTES override', () => {
+    it('should override max_response_bytes when env var provided', () => {
+      process.env.GROCY_MAX_RESPONSE_BYTES = '1048576';
+
+      const config = (() => {
+        const ConfigManagerClass = ConfigManager as any;
+        return new ConfigManagerClass(tempConfigPath);
+      })();
+      const { yaml } = config.getConfig();
+
+      expect(yaml.grocy.max_response_bytes).toBe(1048576);
+    });
+  });
+
   describe('HTTP_SERVER_PORT override', () => {
     it('should override HTTP server port when env var provided', () => {
       process.env.HTTP_SERVER_PORT = '9090';
@@ -376,6 +430,14 @@ tools:
 
     it('should exit with code 1 when REST_RESPONSE_SIZE_LIMIT is invalid', () => {
       setupEnvironment({ REST_RESPONSE_SIZE_LIMIT: 'not-a-number' });
+
+      expect(() => attemptConfigCreation()).toThrow('process.exit called');
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+      expect(processExitSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('should exit with code 1 when GROCY_MAX_RESPONSE_BYTES is invalid', () => {
+      setupEnvironment({ GROCY_MAX_RESPONSE_BYTES: 'not-a-number' });
 
       expect(() => attemptConfigCreation()).toThrow('process.exit called');
       expect(processExitSpy).toHaveBeenCalledWith(1);

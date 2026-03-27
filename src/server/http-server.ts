@@ -7,22 +7,81 @@ import { VERSION, PACKAGE_NAME as SERVER_NAME } from '../version.js';
 import cors from 'cors';
 import http from 'http';
 import { logger } from '../utils/logger.js';
+import type { Request, Response, NextFunction } from 'express';
+
+export interface HttpServerSecurityOptions {
+  /** CORS `Access-Control-Allow-Origin` (`*` or a single origin, e.g. `http://localhost:3000`) */
+  corsOrigin: string;
+  /** When set, MCP routes require this token via Bearer, `X-MCP-Access-Token`, or `access_token` query (GET only). */
+  accessToken?: string;
+}
+
+function createMcpAccessGate(accessToken: string | undefined) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    if (!accessToken) {
+      next();
+      return;
+    }
+    if (req.method === 'OPTIONS') {
+      next();
+      return;
+    }
+    const bearer = req.headers.authorization;
+    const headerToken = req.headers['x-mcp-access-token'];
+    const headerTokenStr = Array.isArray(headerToken) ? headerToken[0] : headerToken;
+    const q = req.query.access_token;
+    const queryToken = typeof q === 'string' ? q : undefined;
+    const ok =
+      bearer === `Bearer ${accessToken}` ||
+      headerTokenStr === accessToken ||
+      (req.method === 'GET' && queryToken === accessToken);
+    if (ok) {
+      next();
+      return;
+    }
+    res.status(401).json({
+      jsonrpc: '2.0',
+      error: {
+        code: -32000,
+        message:
+          'Unauthorized: configure MCP_HTTP_ACCESS_TOKEN and send Authorization: Bearer, X-MCP-Access-Token, or access_token query (GET only)'
+      },
+      id: (req.body && typeof req.body === 'object' && 'id' in req.body ? (req.body as { id?: unknown }).id : null) ?? null
+    });
+  };
+}
 
 // HTTP Transport for MCP (Context7 style)
-export function startHttpServer(mcpServer: Server | (() => Server), port: number = 8080): Promise<http.Server> {
+export function startHttpServer(
+  mcpServer: Server | (() => Server),
+  port: number = 8080,
+  security: HttpServerSecurityOptions
+): Promise<http.Server> {
   return new Promise((resolve, reject) => {
   const app = express();
+  const mcpAccessGate = createMcpAccessGate(security.accessToken);
+
+  if (security.accessToken) {
+    logger.config('HTTP MCP access token is enabled (Bearer, X-MCP-Access-Token, or access_token on GET)');
+  }
   
   // Enable JSON body parsing with increased limit
   app.use(express.json({
     limit: '10mb'
   }));
   
-  // Enable CORS for all routes
   app.use(cors({
-    origin: '*',
+    origin: security.corsOrigin,
     methods: ['GET', 'POST', 'OPTIONS', 'DELETE'],
-    allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Mcp-Session-Id', 'Authorization'],
+    allowedHeaders: [
+      'Origin',
+      'X-Requested-With',
+      'Content-Type',
+      'Accept',
+      'Mcp-Session-Id',
+      'Authorization',
+      'X-MCP-Access-Token'
+    ],
     exposedHeaders: ['Mcp-Session-Id', 'Content-Type'],
     optionsSuccessStatus: 200
   }));
@@ -63,7 +122,7 @@ export function startHttpServer(mcpServer: Server | (() => Server), port: number
   };
 
   // Streamable HTTP endpoint (Context7 modern)
-  app.all('/mcp', async (req, res) => {
+  app.all('/mcp', mcpAccessGate, async (req, res) => {
     try {
       const clientSessionId = req.headers['mcp-session-id'] as string | undefined;
       let transport: StreamableHTTPServerTransport | undefined = undefined;
@@ -145,13 +204,12 @@ export function startHttpServer(mcpServer: Server | (() => Server), port: number
   });
 
   // SSE endpoint
-  app.get('/mcp/sse', async (_req, res) => {
+  app.get('/mcp/sse', mcpAccessGate, async (_req, res) => {
     try {
       // Set SSE headers before creating transport
       res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
-      res.setHeader('Access-Control-Allow-Origin', '*');
       
       const transport = new SSEServerTransport('/mcp/messages', res);
       const sessionId = transport.sessionId;
@@ -199,7 +257,7 @@ export function startHttpServer(mcpServer: Server | (() => Server), port: number
   });
 
   // Message endpoint for SSE
-  app.post('/mcp/messages', async (req, res) => {
+  app.post('/mcp/messages', mcpAccessGate, async (req, res) => {
     const sessionId = req.query.sessionId as string;
     
     if (!sessionId) {

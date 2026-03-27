@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 
 export class ResourceHandler {
   private __dirname: string;
+  private readonly allowedResources = new Set(['examples', 'response-format', 'config']);
 
   constructor() {
     const __filename = fileURLToPath(import.meta.url);
@@ -49,6 +50,12 @@ export class ResourceHandler {
     }
 
     const resource = match[1];
+    if (!resource || !this.allowedResources.has(resource)) {
+      throw new McpError(
+        ErrorCode.InvalidRequest,
+        `Resource not found: ${resource}`
+      );
+    }
     
     try {
       // In the built app, resources are in build/resources

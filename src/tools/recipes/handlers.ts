@@ -7,6 +7,8 @@ import { BaseToolHandler } from '../base.js';
 import { ToolResult, ToolHandler } from '../types.js';
 import { InventoryToolHandlers } from '../inventory/handlers.js';
 
+const RECIPES_COOKING_COMPLETE_TOOL = 'recipes_cooking_complete';
+
 export class RecipeToolHandlers extends BaseToolHandler {
   private inventoryHandlers = new InventoryToolHandlers();
 
@@ -433,7 +435,7 @@ export class RecipeToolHandlers extends BaseToolHandler {
       // Get configuration from unified config
       const { config } = await import('../../config/index.js');
       const { toolSubConfigs } = config.parseToolConfiguration();
-      const subConfigs = toolSubConfigs?.get('complete');
+      const subConfigs = toolSubConfigs?.get(RECIPES_COOKING_COMPLETE_TOOL);
       
       const allowMealPlanEntryAlreadyDone = subConfigs?.get('allow_meal_plan_entry_already_done') ?? false;
       const printLabels = subConfigs?.get('print_labels') ?? true;

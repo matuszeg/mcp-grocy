@@ -28,7 +28,8 @@ vi.mock('../../config/index.js', async () => {
       base_url: 'http://localhost:9283',
       api_key: 'test-api-key',
       enable_ssl_verify: true,
-      response_size_limit: 10000
+      response_size_limit: 10000,
+      max_response_bytes: 52_428_800
     },
     writable: false,
     configurable: true
@@ -37,7 +38,8 @@ vi.mock('../../config/index.js', async () => {
   Object.defineProperty(testConfig, 'server', {
     value: {
       enable_http_server: false,
-      http_server_port: 8080
+      http_server_port: 8080,
+      http_cors_origin: '*'
     },
     writable: false,
     configurable: true
@@ -325,9 +327,32 @@ describe('SystemToolHandlers', () => {
           messages: ['Request completed successfully']
         }
       });
+      expect(responseData.request.headers['GROCY-API-KEY']).toBe('[REDACTED]');
       
       // Check timing is reasonable (should be a number followed by 'ms')
       expect(responseData.response.timing).toMatch(/^\d+ms$/);
+    });
+
+    it('should truncate oversized response body and include metadata', async () => {
+      const oversizedBody = { payload: 'x'.repeat(12050) };
+      mockApiClient.request.mockResolvedValue({
+        data: oversizedBody,
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const result = await handlers.testRequest({
+        method: 'GET',
+        endpoint: 'objects/products'
+      });
+
+      expect(result.isError).toBeUndefined();
+      const responseData = JSON.parse(result.content[1].text);
+      expect(typeof responseData.response.body).toBe('string');
+      expect(responseData.response.body).toContain('[TRUNCATED]');
+      expect(responseData.validation.truncated).toBeDefined();
+      expect(responseData.validation.truncated.sizeLimit).toBe(10000);
+      expect(responseData.validation.truncated.originalSize).toBeGreaterThan(10000);
     });
 
     it('should require method and endpoint parameters', async () => {

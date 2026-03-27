@@ -12,17 +12,23 @@ import { logger } from '../utils/logger.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+/** Default cap for Grocy HTTP response bodies (axios maxContentLength), in bytes */
+export const DEFAULT_MAX_RESPONSE_BYTES = 52_428_800; // 50 MiB
+
 // Environment schema
 const EnvironmentSchema = z.object({
   // Grocy Configuration
   GROCY_BASE_URL: z.string().url().optional(),
   GROCY_API_KEY: z.string().optional(),
   GROCY_ENABLE_SSL_VERIFY: z.enum(['true', 'false']).optional(),
+  GROCY_MAX_RESPONSE_BYTES: z.string().regex(/^\d+$/).optional(),
   
   // Server Configuration  
   REST_RESPONSE_SIZE_LIMIT: z.string().regex(/^\d+$/).optional(),
   ENABLE_HTTP_SERVER: z.enum(['true', 'false']).optional(),
   HTTP_SERVER_PORT: z.string().regex(/^\d+$/).optional(),
+  HTTP_CORS_ORIGIN: z.string().optional(),
+  MCP_HTTP_ACCESS_TOKEN: z.string().optional(),
   
   // Logging Configuration
   LOG_LEVEL: z.enum(['DEBUG', 'INFO', 'WARN', 'ERROR']).optional(),
@@ -38,6 +44,10 @@ const YamlConfigSchema = z.object({
   server: z.object({
     enable_http_server: z.boolean().default(false),
     http_server_port: z.number().min(1).max(65535).default(8080),
+    /** CORS `Access-Control-Allow-Origin` for HTTP MCP endpoints (`*` or a single origin URL) */
+    http_cors_origin: z.string().min(1).default('*'),
+    /** When set, MCP HTTP/SSE routes require `Authorization: Bearer <token>`, `X-MCP-Access-Token`, or `access_token` query (GET only). */
+    http_access_token: z.string().optional(),
   }).default({}),
   
   grocy: z.object({
@@ -45,6 +55,8 @@ const YamlConfigSchema = z.object({
     api_key: z.string().optional(),
     enable_ssl_verify: z.boolean().default(true),
     response_size_limit: z.number().positive().default(10000),
+    /** Max Grocy API response body size in bytes (all tools); larger responses fail fast */
+    max_response_bytes: z.number().positive().default(DEFAULT_MAX_RESPONSE_BYTES),
   }).default({}),
   
   tools: z.record(z.string(), z.object({
@@ -71,11 +83,14 @@ export class ConfigManager {
     api_key?: string;
     enable_ssl_verify: boolean;
     response_size_limit: number;
+    max_response_bytes: number;
   };
   
   public readonly server: {
     enable_http_server: boolean;
     http_server_port: number;
+    http_cors_origin: string;
+    http_access_token?: string;
   };
   
   public readonly tools: Record<string, any>;
@@ -88,12 +103,18 @@ export class ConfigManager {
       base_url: this.config.yaml.grocy.base_url,
       ...(this.config.yaml.grocy.api_key !== undefined && { api_key: this.config.yaml.grocy.api_key }),
       enable_ssl_verify: this.config.yaml.grocy.enable_ssl_verify,
-      response_size_limit: this.config.yaml.grocy.response_size_limit
+      response_size_limit: this.config.yaml.grocy.response_size_limit,
+      max_response_bytes: this.config.yaml.grocy.max_response_bytes
     };
     
     this.server = {
       enable_http_server: this.config.yaml.server.enable_http_server,
-      http_server_port: this.config.yaml.server.http_server_port
+      http_server_port: this.config.yaml.server.http_server_port,
+      http_cors_origin: this.config.yaml.server.http_cors_origin,
+      ...(this.config.yaml.server.http_access_token !== undefined &&
+        this.config.yaml.server.http_access_token !== '' && {
+          http_access_token: this.config.yaml.server.http_access_token
+        })
     };
     
     this.tools = this.config.yaml.tools;
@@ -217,6 +238,10 @@ export class ConfigManager {
     if (env.REST_RESPONSE_SIZE_LIMIT !== undefined) {
       yaml.grocy.response_size_limit = parseInt(env.REST_RESPONSE_SIZE_LIMIT, 10);
     }
+
+    if (env.GROCY_MAX_RESPONSE_BYTES !== undefined) {
+      yaml.grocy.max_response_bytes = parseInt(env.GROCY_MAX_RESPONSE_BYTES, 10);
+    }
     
     // Server configuration overrides
     if (env.ENABLE_HTTP_SERVER !== undefined) {
@@ -225,6 +250,15 @@ export class ConfigManager {
     
     if (env.HTTP_SERVER_PORT !== undefined) {
       yaml.server.http_server_port = parseInt(env.HTTP_SERVER_PORT, 10);
+    }
+
+    if (env.HTTP_CORS_ORIGIN !== undefined && env.HTTP_CORS_ORIGIN.length > 0) {
+      yaml.server.http_cors_origin = env.HTTP_CORS_ORIGIN;
+    }
+
+    if (env.MCP_HTTP_ACCESS_TOKEN !== undefined) {
+      yaml.server.http_access_token =
+        env.MCP_HTTP_ACCESS_TOKEN.length > 0 ? env.MCP_HTTP_ACCESS_TOKEN : undefined;
     }
   }
 

@@ -29,7 +29,8 @@ vi.mock('../src/config/index.js', () => ({
       base_url: 'http://localhost:9283',
       api_key: 'test-api-key',
       enable_ssl_verify: true,
-      response_size_limit: 10000
+      response_size_limit: 10000,
+      max_response_bytes: 52_428_800
     },
     getCustomHeaders: () => ({
       'GROCY-API-KEY': 'test-api-key'
@@ -71,6 +72,7 @@ describe('GrocyApiClient', () => {
         baseURL: 'http://localhost:9283',
         validateStatus: expect.any(Function),
         timeout: 30000,
+        maxContentLength: 52_428_800,
         httpsAgent: undefined
       });
     });

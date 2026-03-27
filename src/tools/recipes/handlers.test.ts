@@ -20,7 +20,7 @@ vi.mock('../../config/index.js', () => ({
   config: {
     parseToolConfiguration: vi.fn(() => ({
       toolSubConfigs: new Map([
-        ['complete', new Map([
+        ['recipes_cooking_complete', new Map([
           ['allow_meal_plan_entry_already_done', false],
           ['print_labels', true],
           ['allow_no_meal_plan', false]

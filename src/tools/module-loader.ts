@@ -6,7 +6,7 @@
 import { readdirSync } from 'fs';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { ToolModule } from './types.js';
+import { ToolModule, ToolDefinition, ToolHandler, SubConfigValidator, ToolRegistry } from './types.js';
 import { logger } from '../utils/logger.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -157,12 +157,12 @@ export class ModuleLoader {
 }
 
 // Factory function
-export async function createToolRegistry(): Promise<{ getDefinitions(): any[]; getHandler(name: string): any; getValidator(name: string): any; getToolNames(): string[] }> {
+export async function createToolRegistry(): Promise<ToolRegistry> {
   const { toolModules } = await ModuleLoader.loadAllModules();
   
-  const definitions: any[] = [];
-  const handlers: Record<string, any> = {};
-  const validators: Record<string, any> = {};
+  const definitions: ToolDefinition[] = [];
+  const handlers: Record<string, ToolHandler> = {};
+  const validators: Record<string, SubConfigValidator> = {};
   
   for (const module of toolModules) {
     definitions.push(...module.definitions);
@@ -175,7 +175,7 @@ export async function createToolRegistry(): Promise<{ getDefinitions(): any[]; g
   return {
     getDefinitions: () => definitions,
     getHandler: (name: string) => handlers[name],
-    getValidator: (name: string) => validators[name],
+    getValidator: (name: string): SubConfigValidator | undefined => validators[name],
     getToolNames: () => definitions.map(def => def.name)
   };
 }

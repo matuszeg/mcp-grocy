@@ -57,7 +57,7 @@ tools:
     }
     
     // Clean up temp directory
-    await fs.rmdir(tempDir, { recursive: true });
+    await fs.rm(tempDir, { recursive: true, force: true });
     
     // Clear module cache to ensure fresh imports
     const moduleKeys = Object.keys(require.cache).filter(key => 

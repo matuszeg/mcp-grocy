@@ -17,17 +17,12 @@ import {
 import { z } from 'zod';
 import { VERSION, PACKAGE_NAME as SERVER_NAME } from '../version.js';
 import { createToolRegistry } from '../tools/index.js';
+import type { ToolRegistry } from '../tools/types.js';
 import { config } from '../config/index.js';
 import { startHttpServer } from './http-server.js';
 import { ResourceHandler } from './resources.js';
 import { logger } from '../utils/logger.js';
 import { ErrorHandler } from '../utils/errors.js';
-
-interface ToolRegistry {
-  getDefinitions(): any[];
-  getHandler(name: string): any;
-  getToolNames(): string[];
-}
 
 export class GrocyMcpServer {
   private server: Server;
@@ -45,7 +40,6 @@ export class GrocyMcpServer {
     this.server = server;
     this.toolRegistry = toolRegistry;
     this.resourceHandler = resourceHandler;
-    this.parseToolConfiguration();
     this.parseToolConfiguration();
     this.setupHandlers(this.server);
     this.setupErrorHandling(this.server);
@@ -83,7 +77,6 @@ export class GrocyMcpServer {
     this.toolSubConfigs = toolSubConfigs;
     this.toolAckTokens = toolAckTokens;
     
-    // Validate tool names
     const validToolNames = new Set(this.toolRegistry.getToolNames());
     
     if (enabledTools.size > 0) {
@@ -219,7 +212,12 @@ export class GrocyMcpServer {
       try {
         logger.config(`Starting HTTP server on port ${config.server.http_server_port}`);
         const serverFactory = () => this.createMcpServer();
-        await startHttpServer(serverFactory, config.server.http_server_port);
+        await startHttpServer(serverFactory, config.server.http_server_port, {
+          corsOrigin: config.server.http_cors_origin,
+          ...(config.server.http_access_token !== undefined && {
+            accessToken: config.server.http_access_token
+          })
+        });
       } catch (error) {
         logger.error('Failed to start HTTP server', 'SERVER', { error });
         logger.error('HTTP server is explicitly enabled but cannot start - exiting', 'SERVER');

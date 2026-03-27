@@ -1,6 +1,8 @@
 import { ToolDefinition } from '../types.js';
 import { config } from '../../config/index.js';
 
+const RECIPES_COOKING_COMPLETE_TOOL = 'recipes_cooking_complete';
+
 export const recipeToolDefinitions: ToolDefinition[] = [
   // ==================== RECIPE MANAGEMENT ====================
   {
@@ -228,7 +230,7 @@ export const recipeToolDefinitions: ToolDefinition[] = [
   // ==================== ADVANCED COOKING ====================
   (() => {
     const { toolSubConfigs } = config.parseToolConfiguration();
-    const subConfigs = toolSubConfigs?.get('complete');
+    const subConfigs = toolSubConfigs?.get(RECIPES_COOKING_COMPLETE_TOOL);
     const allowNoMealPlan = subConfigs?.get('allow_no_meal_plan') ?? false;
     const allowAlreadyDone = subConfigs?.get('allow_meal_plan_entry_already_done') ?? false;
     

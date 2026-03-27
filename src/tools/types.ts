@@ -27,3 +27,11 @@ export interface ToolModule {
   handlers: Record<string, ToolHandler>;
   validators?: Record<string, SubConfigValidator>;
 }
+
+/** Aggregated registry produced by {@link createToolRegistry} */
+export interface ToolRegistry {
+  getDefinitions(): ToolDefinition[];
+  getHandler(name: string): ToolHandler | undefined;
+  getValidator(name: string): SubConfigValidator | undefined;
+  getToolNames(): string[];
+}
