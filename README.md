@@ -273,6 +273,29 @@ npm start
 | `npm test`           | Run test suite                                      |
 | `npm run test:watch` | Run tests in watch mode                             |
 | `npm run inspector`  | Launch MCP protocol inspector                       |
+| `npm run dev:mcp-tef` | Run [mcp-tef](https://github.com/StacklokLabs/mcp-tef) locally (needs **uv** + **Ollama**) for tool-description / similarity checks |
+
+### Optional: mcp-tef (local tool evaluation)
+
+When you change tool descriptions or add tools, you can run [StacklokLabs/mcp-tef](https://github.com/StacklokLabs/mcp-tef) against **Ollama** (no cloud API key required):
+
+1. Install [uv](https://docs.astral.sh/uv/) and start Ollama; pull a small model, e.g. `ollama pull llama3.2:3b`.
+2. Build and start **mcp-grocy over HTTP** in another terminal (SSE endpoint for mcp-tef):
+
+   ```bash
+   npm run build
+   MCP_HTTP_TRANSPORT_ONLY=true ENABLE_HTTP_SERVER=true HTTP_SERVER_PORT=8790 npm start
+   ```
+
+3. Start mcp-tef:
+
+   ```bash
+   npm run dev:mcp-tef
+   ```
+
+4. Open `http://127.0.0.1:8000/docs` and point workflows at **`http://127.0.0.1:8790/mcp/sse`** (or your port).
+
+The first run clones mcp-tef into `.cache/mcp-tef` (ignored by git). Override the Ollama model with `MCP_TEF_OLLAMA_MODEL`, the listen port with `MCP_TEF_PORT`, or the clone ref with `MCP_TEF_REF`.
 
 ### Debugging
 
