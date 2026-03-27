@@ -33,26 +33,16 @@ fi
 source .venv/bin/activate
 pip install -q -r requirements.txt
 
-# --dynamic-only: initialization + tool discovery/call smoke tests (passes without a live Grocy).
-# 2025-03-26 dynamic suite includes async capability checks we do not advertise; skip those only for that version.
+# --dynamic-only: initialization + tool discovery + legacy async tools (2025-03-26) when advertised.
 run_one() {
   local ver="$1"
   shift
   echo "=== MCP validator: protocol $ver ===" >&2
-  if [[ "$ver" == "2025-03-26" ]]; then
-    python -m mcp_testing.scripts.compliance_report \
-      --server-command "node $ROOT/build/main.js" \
-      --protocol-version "$ver" \
-      --dynamic-only \
-      --skip-async \
-      "$@"
-  else
-    python -m mcp_testing.scripts.compliance_report \
-      --server-command "node $ROOT/build/main.js" \
-      --protocol-version "$ver" \
-      --dynamic-only \
-      "$@"
-  fi
+  python -m mcp_testing.scripts.compliance_report \
+    --server-command "node $ROOT/build/main.js" \
+    --protocol-version "$ver" \
+    --dynamic-only \
+    "$@"
 }
 
 if [[ -n "${MCP_PROTOCOL_VERSION:-}" ]]; then

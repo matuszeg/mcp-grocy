@@ -13,6 +13,7 @@ import {
   ListResourcesRequestSchema,
   ReadResourceRequestSchema,
   McpError,
+  type ServerCapabilities,
 } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { VERSION, PACKAGE_NAME as SERVER_NAME } from '../version.js';
@@ -24,6 +25,45 @@ import { ResourceHandler } from './resources.js';
 import { logger } from '../utils/logger.js';
 import { ErrorHandler } from '../utils/errors.js';
 
+/** MCP 2025-03-26 legacy async tools (Janix validator + older clients); not in typed ServerCapabilities. */
+const GROCY_SERVER_CAPABILITIES = {
+  tools: {
+    listChanged: false,
+    asyncSupported: true,
+  },
+  resources: {},
+  prompts: {},
+} as unknown as ServerCapabilities;
+
+const ToolsCallAsyncRequestSchema = z.object({
+  method: z.literal('tools/call-async'),
+  params: z.object({
+    name: z.string(),
+    arguments: z.record(z.string(), z.unknown()).optional(),
+  }),
+  id: z.union([z.string(), z.number()]),
+});
+
+const ToolsResultRequestSchema = z.object({
+  method: z.literal('tools/result'),
+  params: z.object({
+    id: z.union([z.string(), z.number()]),
+  }),
+});
+
+const ToolsCancelRequestSchema = z.object({
+  method: z.literal('tools/cancel'),
+  params: z.object({
+    id: z.union([z.string(), z.number()]),
+  }),
+});
+
+type AsyncToolJob =
+  | { status: 'pending' }
+  | { status: 'completed'; result: CallToolResult }
+  | { status: 'error'; error: { code: number; message: string } }
+  | { status: 'cancelled' };
+
 export class GrocyMcpServer {
   private server: Server;
   private enabledTools = new Set<string>();
@@ -31,6 +71,7 @@ export class GrocyMcpServer {
   private toolAckTokens = new Map<string, string>();
   private resourceHandler: ResourceHandler;
   private toolRegistry: ToolRegistry;
+  private readonly asyncToolJobs = new Map<string, AsyncToolJob>();
 
   private constructor(
     server: Server,
@@ -52,7 +93,7 @@ export class GrocyMcpServer {
       Promise.resolve(new ResourceHandler())
     ]);
 
-    // Create server
+    // Create server (SDK handles initialize / protocol negotiation)
     const server = new Server(
       {
         name: SERVER_NAME,
@@ -62,11 +103,7 @@ export class GrocyMcpServer {
           'MCP server for Grocy. Documentation: https://github.com/miguelangel-nubla/mcp-grocy/blob/main/README.md',
       },
       {
-        capabilities: {
-          tools: {},
-          resources: {},
-          prompts: {}
-        }
+        capabilities: GROCY_SERVER_CAPABILITIES,
       }
     );
 
@@ -94,20 +131,82 @@ export class GrocyMcpServer {
     }
   }
 
-  private setupHandlers(server: Server): void {
-    // Initialize handler
-    server.setRequestHandler(
-      z.object({ method: z.literal('initialize'), params: z.any().optional() }),
-      async (request) => {
-        logger.debug('Initialize request', 'MCP');
-        return {
-          protocolVersion: request.params?.protocolVersion || '2024-11-05',
-          capabilities: { tools: {}, resources: {}, prompts: {} },
-          serverInfo: { name: SERVER_NAME, version: VERSION }
-        };
-      }
-    );
+  /**
+   * Shared implementation for tools/call and tools/call-async (2025-03-26).
+   */
+  private async executeToolCall(
+    toolName: string,
+    args: Record<string, unknown> | undefined
+  ): Promise<CallToolResult> {
+    if (!this.enabledTools.has(toolName)) {
+      throw new McpError(
+        ErrorCode.InvalidRequest,
+        `Tool '${toolName}' is not enabled. Enable it in your configuration.`
+      );
+    }
 
+    const handler = this.toolRegistry.getHandler(toolName);
+    if (!handler) {
+      throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${toolName}`);
+    }
+
+    try {
+      const subConfigs = this.toolSubConfigs.get(toolName);
+      const result = await handler(args, subConfigs);
+
+      if (!result.isError) {
+        const ackToken = this.toolAckTokens.get(toolName);
+        if (ackToken) {
+          result.content.unshift({
+            type: 'text' as const,
+            text: `Acknowledgment token: ${ackToken}`
+          });
+        }
+      }
+
+      return result as CallToolResult;
+    } catch (error: any) {
+      ErrorHandler.logError(error, `tool: ${toolName}`);
+      throw ErrorHandler.toMcpError(error, `${toolName} failed`);
+    }
+  }
+
+  /** Isolate async tool jobs per transport session (HTTP) vs stdio default. */
+  private jobStorageKey(sessionId: string | undefined, id: string | number): string {
+    const s = sessionId ?? 'stdio';
+    return `${s}:${String(id)}`;
+  }
+
+  private async runAsyncToolJob(
+    storageKey: string,
+    toolName: string,
+    args: Record<string, unknown> | undefined
+  ): Promise<void> {
+    const pending = this.asyncToolJobs.get(storageKey);
+    if (!pending || pending.status !== 'pending') {
+      return;
+    }
+    try {
+      const result = await this.executeToolCall(toolName, args);
+      const current = this.asyncToolJobs.get(storageKey);
+      if (!current || current.status === 'cancelled') {
+        return;
+      }
+      this.asyncToolJobs.set(storageKey, { status: 'completed', result });
+    } catch (error: unknown) {
+      const current = this.asyncToolJobs.get(storageKey);
+      if (!current || current.status === 'cancelled') {
+        return;
+      }
+      const err = ErrorHandler.toMcpError(error as Error, `${toolName} failed`);
+      this.asyncToolJobs.set(storageKey, {
+        status: 'error',
+        error: { code: err.code, message: err.message }
+      });
+    }
+  }
+
+  private setupHandlers(server: Server): void {
     // List tools
     server.setRequestHandler(ListToolsRequestSchema, async () => {
       const allTools = this.toolRegistry.getDefinitions();
@@ -120,41 +219,56 @@ export class GrocyMcpServer {
     // Call tool
     server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name: toolName, arguments: args } = request.params;
-      
-      // Check if tool is enabled
-      if (!this.enabledTools.has(toolName)) {
-        throw new McpError(
-          ErrorCode.InvalidRequest,
-          `Tool '${toolName}' is not enabled. Enable it in your configuration.`
-        );
-      }
+      return this.executeToolCall(toolName, args as Record<string, unknown> | undefined);
+    });
 
-      // Get handler
-      const handler = this.toolRegistry.getHandler(toolName);
-      if (!handler) {
-        throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${toolName}`);
-      }
+    // Legacy async tools (MCP 2025-03-26) — run synchronously but expose poll/cancel API
+    server.setRequestHandler(ToolsCallAsyncRequestSchema, async (request, extra) => {
+      const { name: toolName, arguments: args } = request.params;
+      const storageKey = this.jobStorageKey(extra.sessionId, request.id);
+      const jobId = String(request.id);
+      this.asyncToolJobs.set(storageKey, { status: 'pending' });
+      void this.runAsyncToolJob(storageKey, toolName, args);
+      return { id: jobId, status: 'pending' as const };
+    });
 
-      try {
-        const subConfigs = this.toolSubConfigs.get(toolName);
-        const result = await handler(args, subConfigs);
-        
-        // Automatically add ack_token to successful responses (at the beginning)
-        if (!result.isError) {
-          const ackToken = this.toolAckTokens.get(toolName);
-          if (ackToken) {
-            result.content.unshift({
-              type: 'text' as const,
-              text: `Acknowledgment token: ${ackToken}`
-            });
-          }
-        }
-        
-        return result as CallToolResult;
-      } catch (error: any) {
-        ErrorHandler.logError(error, `tool: ${toolName}`);
-        throw ErrorHandler.toMcpError(error, `${toolName} failed`);
+    server.setRequestHandler(ToolsResultRequestSchema, async (request, extra) => {
+      const storageKey = this.jobStorageKey(extra.sessionId, request.params.id);
+      const job = this.asyncToolJobs.get(storageKey);
+      if (!job) {
+        return {
+          status: 'error' as const,
+          error: { message: `Unknown tool call id: ${String(request.params.id)}` }
+        };
       }
+      if (job.status === 'pending') {
+        return { status: 'pending' as const };
+      }
+      if (job.status === 'cancelled') {
+        return { status: 'cancelled' as const };
+      }
+      if (job.status === 'error') {
+        return { status: 'error' as const, error: job.error };
+      }
+      const { content, isError } = job.result;
+      return {
+        status: 'completed' as const,
+        content,
+        ...(isError !== undefined && { isError })
+      };
+    });
+
+    server.setRequestHandler(ToolsCancelRequestSchema, async (request, extra) => {
+      const storageKey = this.jobStorageKey(extra.sessionId, request.params.id);
+      const job = this.asyncToolJobs.get(storageKey);
+      if (!job) {
+        return { success: false };
+      }
+      if (job.status === 'pending') {
+        this.asyncToolJobs.set(storageKey, { status: 'cancelled' });
+        return { success: true };
+      }
+      return { success: false };
     });
 
     // Resources
@@ -189,11 +303,7 @@ export class GrocyMcpServer {
           'MCP server for Grocy. Documentation: https://github.com/miguelangel-nubla/mcp-grocy/blob/main/README.md',
       },
       {
-        capabilities: {
-          tools: {},
-          resources: {},
-          prompts: {}
-        }
+        capabilities: GROCY_SERVER_CAPABILITIES,
       }
     );
     
@@ -204,10 +314,25 @@ export class GrocyMcpServer {
   }
 
   public async start(): Promise<void> {
-    // Start STDIO transport
-    const transport = new StdioServerTransport();
-    await this.server.connect(transport);
-    logger.info('MCP server running on stdio', 'SERVER');
+    const httpTransportOnly =
+      process.env.MCP_HTTP_TRANSPORT_ONLY === 'true' ||
+      process.env.MCP_HTTP_TRANSPORT_ONLY === '1';
+
+    if (httpTransportOnly && !config.server.enable_http_server) {
+      logger.error(
+        'MCP_HTTP_TRANSPORT_ONLY is set but HTTP server is disabled; enable server.enable_http_server or ENABLE_HTTP_SERVER',
+        'SERVER'
+      );
+      process.exit(1);
+    }
+
+    if (!httpTransportOnly) {
+      const transport = new StdioServerTransport();
+      await this.server.connect(transport);
+      logger.info('MCP server running on stdio', 'SERVER');
+    } else {
+      logger.info('MCP_HTTP_TRANSPORT_ONLY: stdio transport skipped', 'SERVER');
+    }
 
     // Start HTTP/SSE if enabled
     if (config.server.enable_http_server) {

@@ -3,6 +3,7 @@
 # Copy this file to mcp-grocy.yaml and customize as needed
 
 # Server Configuration
+# For HTTP-only daemons (e.g. CI): set env MCP_HTTP_TRANSPORT_ONLY=true and ENABLE_HTTP_SERVER=true
 server:
   enable_http_server: false
   http_server_port: 8080

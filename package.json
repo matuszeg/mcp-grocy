@@ -24,6 +24,8 @@
     "inspector": "npx @modelcontextprotocol/inspector build/main.js",
     "test": "vitest run",
     "test:mcp-validator": "bash scripts/run-mcp-validator.sh",
+    "start:mcp-http-test": "bash scripts/start-mcp-http-for-tests.sh",
+    "stop:mcp-http-test": "bash scripts/stop-mcp-http-for-tests.sh",
     "test:watch": "vitest",
     "check-tools": "node scripts/check-tools.js",
     "validate-release": "node scripts/check-tools.js --validate-release",
@@ -62,7 +64,7 @@
     "semantic-release": "^22.0.12",
     "ts-node": "^10.9.1",
     "typescript": "^5.9.0",
-    "vitest": "^3.2.4"
+    "vitest": "^4.0.0"
   },
   "keywords": [
     "grocy",

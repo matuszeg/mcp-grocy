@@ -1,4 +1,5 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import express from 'express';
 import { randomUUID } from 'crypto';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
@@ -171,7 +172,7 @@ export function startHttpServer(
         };
 
         const serverInstance = getServerInstance();
-        await serverInstance.connect(transport as any); // Type assertion to work around SDK type issue
+        await serverInstance.connect(transport as Transport);
       }
 
       if (!transport) {

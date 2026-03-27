@@ -38,16 +38,20 @@ vi.mock('../src/api/client.js', () => ({
   }
 }));
 
-// Mock MCP SDK server
-const mockServer = {
-  setRequestHandler: vi.fn(),
-  connect: vi.fn(),
-  close: vi.fn(),
-  onerror: null
-};
+// Mock MCP SDK server (Vitest 4: `new Server()` needs a constructable function that returns the instance)
+const { mockServer } = vi.hoisted(() => ({
+  mockServer: {
+    setRequestHandler: vi.fn(),
+    connect: vi.fn(),
+    close: vi.fn(),
+    onerror: null as null,
+  },
+}));
 
 vi.mock('@modelcontextprotocol/sdk/server/index.js', () => ({
-  Server: vi.fn().mockImplementation(() => mockServer)
+  Server: vi.fn(function MockMcpServer() {
+    return mockServer;
+  }),
 }));
 
 vi.mock('@modelcontextprotocol/sdk/server/stdio.js', () => ({
@@ -86,7 +90,7 @@ describe('Integration Tests', () => {
     it('should register all request handlers', async () => {
       server = await GrocyMcpServer.create();
 
-      // Should register initialize, list tools, call tool, and resource handlers
+      // Registers tools/resources (+ legacy async tool) handlers on the SDK Server
       expect(mockServer.setRequestHandler).toHaveBeenCalled();
     });
   });
@@ -131,7 +135,7 @@ describe('Integration Tests', () => {
       // Check that setRequestHandler was called
       expect(mockServer.setRequestHandler).toHaveBeenCalled();
       
-      // Should have at least 4 handlers: initialize (x2), list tools, call tool
+      // list + call + async tool trio + resources
       expect(mockServer.setRequestHandler.mock.calls.length).toBeGreaterThanOrEqual(4);
     });
 
@@ -181,7 +185,7 @@ describe('Integration Tests', () => {
   });
 
   describe('Configuration Integration', () => {
-    it('should apply tool filtering when configured', () => {
+    it('should apply tool filtering when configured', async () => {
       // Mock tool filtering configuration
       vi.doMock('../src/config/environment.js', () => ({
         default: {
@@ -196,10 +200,7 @@ describe('Integration Tests', () => {
         }
       }));
 
-      // Should not throw when creating server with filtered tools
-      expect(async () => {
-        server = await GrocyMcpServer.create();
-      }).not.toThrow();
+      await expect(GrocyMcpServer.create()).resolves.toBeDefined();
     });
   });
 
