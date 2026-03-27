@@ -3,7 +3,7 @@ ARG BUILD_FROM=alpine:3.21
 
 
 FROM $BUILD_FROM AS base
-ARG NODE_VERSION=20 # Default Node.js version for addon OS setup
+ARG NODE_VERSION=22 # Default Node.js version for addon OS setup
 ARG BUILD_FROM # Re-declare ARG to make it available in this stage
 WORKDIR /app
 

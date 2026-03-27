@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { GrocyMcpServer } from '../src/server/mcp-server.js';
 import { createToolRegistry, ToolRegistry } from '../src/tools/index.js';
+import { createLinkedTransports } from './mcp-linked-transport.js';
 
 // Mock config module
 vi.mock('../src/config/environment.js', () => ({
@@ -42,6 +44,7 @@ vi.mock('../src/api/client.js', () => ({
 describe('Integration Tests', () => {
   let server: GrocyMcpServer;
   let toolRegistry: ToolRegistry;
+  let mcpClient: Client | undefined;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -49,11 +52,17 @@ describe('Integration Tests', () => {
   });
 
   afterEach(async () => {
+    try {
+      await mcpClient?.close();
+    } catch {
+      /* ignore */
+    }
+    mcpClient = undefined;
     if (server) {
       try {
         await server.serverInstance.close();
-      } catch (error) {
-        // Ignore close errors in tests
+      } catch {
+        /* ignore */
       }
     }
     vi.clearAllMocks();
@@ -110,14 +119,18 @@ describe('Integration Tests', () => {
       server = await GrocyMcpServer.create();
     });
 
-    it('wires tools/* and resources/* handlers on the underlying Server', () => {
-      const handlers = (server.serverInstance.server as unknown as { _requestHandlers: Map<string, unknown> })
-        ._requestHandlers;
-      expect(handlers.has('tools/list')).toBe(true);
-      expect(handlers.has('tools/call')).toBe(true);
-      expect(handlers.has('resources/list')).toBe(true);
-      expect(handlers.has('resources/templates/list')).toBe(true);
-      expect(handlers.has('resources/read')).toBe(true);
+    it('responds to tools/list and resources/list over an in-memory MCP transport', async () => {
+      const [clientTransport, serverTransport] = createLinkedTransports();
+      await server.serverInstance.connect(serverTransport);
+      mcpClient = new Client({ name: 'integration-test', version: '1.0.0' }, { capabilities: {} });
+      await mcpClient.connect(clientTransport);
+
+      const { tools } = await mcpClient.listTools();
+      expect(Array.isArray(tools)).toBe(true);
+
+      const { resources } = await mcpClient.listResources();
+      expect(resources.length).toBeGreaterThanOrEqual(3);
+      expect(resources.some((r) => String(r.uri).includes('examples'))).toBe(true);
     });
 
     it('should validate tool registry has handlers for all definitions', () => {

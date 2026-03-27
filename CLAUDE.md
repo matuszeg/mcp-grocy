@@ -39,11 +39,11 @@ This is a **Model Context Protocol (MCP) server** that wraps the Grocy API, buil
 ### Key Components
 
 #### Core Server (`src/server/mcp-server.ts`)
-- **`GrocyMcpServer`** - Main MCP server implementation with factory pattern
-- Manages tool registration, validation, and execution
-- Handles authentication and request/response processing
-- Supports both stdio and HTTP/SSE transport protocols
-- Implements acknowledgment token functionality for tool confirmations
+- **`GrocyMcpServer`** - Wraps the SDK **`McpServer`** (high-level API): **`registerTool`** / **`registerResource`**
+- All tools from the registry are registered; YAML-disabled tools use **`RegisteredTool.disable()`** so `tools/list` omits them while the protocol stays consistent
+- Tool inputs are validated with Zod built from JSON-Schema-style definitions in **`src/server/tool-input-zod.ts`**
+- Supports stdio and HTTP/SSE transports; HTTP builds a fresh **`McpServer` per session** via **`createMcpServer()`**
+- Acknowledgment tokens for configured tools are still appended on successful **`tools/call`** results
 
 #### HTTP Server (`src/server/http-server.ts`)
 - Provides HTTP and SSE endpoints for MCP protocol
@@ -57,8 +57,7 @@ This is a **Model Context Protocol (MCP) server** that wraps the Grocy API, buil
 
 #### Configuration System (`src/config/`)
 - **Dual configuration approach**: Environment variables + YAML file
-- `src/config/index.ts` - Unified ConfigManager with Zod validation
-- `src/config/yaml-config.ts` - YAML-specific configuration handling
+- `src/config/index.ts` - Unified ConfigManager with **Zod 4** validation (`ZodError.issues` for logging)
 - **Config file resolution**: Checks current directory first, then project root (supports running from any directory)
 - Schema validation with detailed error reporting
 
@@ -134,8 +133,8 @@ tools:
 - `NODE_ENV` - Environment mode (development, production, test)
 
 ### Error Handling and Validation
-- **Comprehensive error handling** via `src/utils/errors.js`
-- **Input validation** using Zod schemas in tool definitions
+- **Comprehensive error handling** via `src/utils/errors.ts`
+- **MCP tool input validation** via Zod (from definitions) at the **`McpServer`** boundary; handlers still enforce business rules
 - **Response size limiting** to prevent memory issues
 - **Graceful degradation** with detailed error messages
 - **Type-safe configuration** validation
