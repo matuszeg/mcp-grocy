@@ -57,8 +57,9 @@ export class GrocyMcpServer {
       {
         name: SERVER_NAME,
         version: VERSION,
-        serverUrl: "https://github.com/miguelangel-nubla/mcp-grocy",
-        documentationUrl: "https://github.com/miguelangel-nubla/mcp-grocy/blob/main/README.md"
+        websiteUrl: 'https://github.com/miguelangel-nubla/mcp-grocy',
+        description:
+          'MCP server for Grocy. Documentation: https://github.com/miguelangel-nubla/mcp-grocy/blob/main/README.md',
       },
       {
         capabilities: {
@@ -183,8 +184,9 @@ export class GrocyMcpServer {
       {
         name: SERVER_NAME,
         version: VERSION,
-        serverUrl: "https://github.com/miguelangel-nubla/mcp-grocy",
-        documentationUrl: "https://github.com/miguelangel-nubla/mcp-grocy/blob/main/README.md"
+        websiteUrl: 'https://github.com/miguelangel-nubla/mcp-grocy',
+        description:
+          'MCP server for Grocy. Documentation: https://github.com/miguelangel-nubla/mcp-grocy/blob/main/README.md',
       },
       {
         capabilities: {
