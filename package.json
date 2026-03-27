@@ -28,6 +28,7 @@
     "test": "vitest run",
     "test:mcp-validator": "bash scripts/run-mcp-validator.sh",
     "dev:mcp-tef": "bash scripts/run-mcp-tef.sh",
+    "report:mcp-tef": "bash scripts/mcp-tef-report.sh",
     "start:mcp-http-test": "bash scripts/start-mcp-http-for-tests.sh",
     "stop:mcp-http-test": "bash scripts/stop-mcp-http-for-tests.sh",
     "test:watch": "vitest",

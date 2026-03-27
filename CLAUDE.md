@@ -28,6 +28,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - `npm run inspector` - Launch MCP inspector for debugging protocol interactions
 - `npm run dev:mcp-tef` - Run [mcp-tef](https://github.com/StacklokLabs/mcp-tef) locally (requires `uv` + Ollama) for tool-description evaluation; see README **Optional: mcp-tef**
+- `npm run report:mcp-tef` - One-shot similarity report into `reports/mcp-tef/<stamp>/`: read **`REPORT.md`** or **`REPORT.html`**; raw JSON is `similarity.json` (optional `--with-recommendations`, `--quality`)
 - Set `GROCY_BASE_URL` and `GROCY_API_KEY` environment variables before starting
 - Use built executable: `./build/main.js` (runs from any directory after build)
 

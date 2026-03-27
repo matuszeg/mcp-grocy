@@ -38,3 +38,6 @@ mcp-config.local.json
 # Temporary files
 *.tmp
 .cache/
+
+# Local mcp-tef report output (npm run report:mcp-tef)
+reports/mcp-tef/

@@ -274,6 +274,7 @@ npm start
 | `npm run test:watch` | Run tests in watch mode                             |
 | `npm run inspector`  | Launch MCP protocol inspector                       |
 | `npm run dev:mcp-tef` | Run [mcp-tef](https://github.com/StacklokLabs/mcp-tef) locally (needs **uv** + **Ollama**) for tool-description / similarity checks |
+| `npm run report:mcp-tef` | One command: build, temporary mcp-grocy HTTP + mcp-tef, write `reports/mcp-tef/<timestamp>/` (similarity JSON + `SUMMARY.md`) |
 
 ### Optional: mcp-tef (local tool evaluation)
 
@@ -296,6 +297,23 @@ When you change tool descriptions or add tools, you can run [StacklokLabs/mcp-te
 4. Open `http://127.0.0.1:8000/docs` and point workflows at **`http://127.0.0.1:8790/mcp/sse`** (or your port).
 
 The first run clones mcp-tef into `.cache/mcp-tef` (ignored by git). Override the Ollama model with `MCP_TEF_OLLAMA_MODEL`, the listen port with `MCP_TEF_PORT`, or the clone ref with `MCP_TEF_REF`.
+
+**One-shot report (no manual API calls):**
+
+```bash
+npm run report:mcp-tef
+```
+
+Writes under `reports/mcp-tef/<timestamp>/`:
+
+- **`REPORT.md`** — human-readable: tools by domain, flagged pairs as a **markdown table** (short tool names, similarity %).
+- **`REPORT.html`** — same pairs in a simple table; open in a browser if you prefer.
+- **`SUMMARY.md`** — one-screen pointer + counts.
+- **`similarity.json`** — full API response (matrix, composite ids).
+
+Uses ephemeral ports **8792** (mcp-grocy) and **8020** (mcp-tef) by default (`MCP_GROCY_HTTP_PORT`, `MCP_TEF_REPORT_PORT` to override). If you do not set `MCP_GROCY_YAML`, the script drops a temporary `mcp-grocy.yaml` next to the report by copying `mcp-grocy.yaml.example` with every `enabled: false` flipped to `true`, so `tools/list` is complete for analysis.
+
+Add `--with-recommendations` for LLM suggestions on flagged pairs, or `--quality` for per-tool quality scoring (slow; both need Ollama). The report calls mcp-tef’s similarity API with **`transport: sse`** against `/mcp/sse` (current [mcp-tef](https://github.com/StacklokLabs/mcp-tef) request shape).
 
 ### Debugging
 
