@@ -161,14 +161,14 @@ export const ToolDefinitionSchema = z.object({
   description: z.string(),
   inputSchema: z.object({
     type: z.literal('object'),
-    properties: z.record(z.any()),
+    properties: z.record(z.string(), z.any()),
     required: z.array(z.string()).optional()
   })
 });
 
 export const ToolModuleSchema = z.object({
   definitions: z.array(ToolDefinitionSchema),
-  handlers: z.record(z.function())
+  handlers: z.record(z.string(), z.custom<ToolHandler>((v): v is ToolHandler => typeof v === 'function'))
 });
 
 // Type guards

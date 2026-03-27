@@ -1,4 +1,4 @@
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import express from 'express';
 import { randomUUID } from 'crypto';
@@ -54,7 +54,7 @@ function createMcpAccessGate(accessToken: string | undefined) {
 
 // HTTP Transport for MCP (Context7 style)
 export function startHttpServer(
-  mcpServer: Server | (() => Server),
+  mcpServer: McpServer | (() => McpServer),
   port: number = 8080,
   security: HttpServerSecurityOptions
 ): Promise<http.Server> {
@@ -105,7 +105,7 @@ export function startHttpServer(
   // Session management for transports
   const streamableTransports: Record<string, StreamableHTTPServerTransport> = {};
   const sseTransports: Record<string, SSEServerTransport> = {};
-  const sseServerInstances: Record<string, Server> = {};
+  const sseServerInstances: Record<string, McpServer> = {};
 
   // Simplified request logging
   app.use((req, _res, next) => {

@@ -48,8 +48,12 @@ const YamlConfigSchema = z.object({
     http_cors_origin: z.string().min(1).default('*'),
     /** When set, MCP HTTP/SSE routes require `Authorization: Bearer <token>`, `X-MCP-Access-Token`, or `access_token` query (GET only). */
     http_access_token: z.string().optional(),
-  }).default({}),
-  
+  }).default({
+    enable_http_server: false,
+    http_server_port: 8080,
+    http_cors_origin: '*',
+  }),
+
   grocy: z.object({
     base_url: z.string().url().default('http://localhost:9283'),
     api_key: z.string().optional(),
@@ -57,7 +61,12 @@ const YamlConfigSchema = z.object({
     response_size_limit: z.number().positive().default(10000),
     /** Max Grocy API response body size in bytes (all tools); larger responses fail fast */
     max_response_bytes: z.number().positive().default(DEFAULT_MAX_RESPONSE_BYTES),
-  }).default({}),
+  }).default({
+    base_url: 'http://localhost:9283',
+    enable_ssl_verify: true,
+    response_size_limit: 10000,
+    max_response_bytes: DEFAULT_MAX_RESPONSE_BYTES,
+  }),
   
   tools: z.record(z.string(), z.object({
     enabled: z.boolean().default(false),
@@ -148,9 +157,10 @@ export class ConfigManager {
     } catch (error) {
       if (error instanceof z.ZodError) {
         logger.error('Invalid environment variables', 'CONFIG');
-        error.errors.forEach(err => {
-          logger.error(`${err.path.join('.')}: ${err.message}`, 'CONFIG');
-        });
+        for (const issue of error.issues) {
+          const path = issue.path?.length ? issue.path.join('.') : '(root)';
+          logger.error(`${path}: ${issue.message}`, 'CONFIG');
+        }
         process.exit(1);
       }
       throw error;
@@ -175,9 +185,10 @@ export class ConfigManager {
     } catch (error) {
       if (error instanceof z.ZodError) {
         logger.error('Invalid YAML configuration', 'CONFIG');
-        error.errors.forEach(err => {
-          logger.error(`${err.path.join('.')}: ${err.message}`, 'CONFIG');
-        });
+        for (const issue of error.issues) {
+          const path = issue.path?.length ? issue.path.join('.') : '(root)';
+          logger.error(`${path}: ${issue.message}`, 'CONFIG');
+        }
         process.exit(1);
       }
       throw error;

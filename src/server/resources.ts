@@ -4,9 +4,33 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+/** Static docs exposed as MCP resources (used by ResourceHandler and McpServer registration). */
+export const STATIC_MCP_RESOURCE_ENTRIES = [
+  {
+    slug: 'examples',
+    name: 'Grocy API Usage Examples',
+    description: 'Detailed examples of using the Grocy API',
+    mimeType: 'text/markdown' as const
+  },
+  {
+    slug: 'response-format',
+    name: 'Response Format Documentation',
+    description: 'Documentation of the response format and structure',
+    mimeType: 'text/markdown' as const
+  },
+  {
+    slug: 'config',
+    name: 'Configuration Documentation',
+    description: 'Documentation of all configuration options and how to use them',
+    mimeType: 'text/markdown' as const
+  }
+] as const;
+
 export class ResourceHandler {
   private __dirname: string;
-  private readonly allowedResources = new Set(['examples', 'response-format', 'config']);
+  private readonly allowedResources: Set<string> = new Set(
+    STATIC_MCP_RESOURCE_ENTRIES.map((e) => e.slug)
+  );
 
   constructor() {
     const __filename = fileURLToPath(import.meta.url);
@@ -15,26 +39,12 @@ export class ResourceHandler {
 
   public async listResources() {
     return {
-      resources: [
-        {
-          uri: `${SERVER_NAME}://examples`,
-          name: 'Grocy API Usage Examples',
-          description: 'Detailed examples of using the Grocy API',
-          mimeType: 'text/markdown'
-        },
-        {
-          uri: `${SERVER_NAME}://response-format`,
-          name: 'Response Format Documentation',
-          description: 'Documentation of the response format and structure',
-          mimeType: 'text/markdown'
-        },
-        {
-          uri: `${SERVER_NAME}://config`,
-          name: 'Configuration Documentation',
-          description: 'Documentation of all configuration options and how to use them',
-          mimeType: 'text/markdown'
-        }
-      ]
+      resources: STATIC_MCP_RESOURCE_ENTRIES.map((e) => ({
+        uri: `${SERVER_NAME}://${e.slug}`,
+        name: e.name,
+        description: e.description,
+        mimeType: e.mimeType
+      }))
     };
   }
 

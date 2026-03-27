@@ -33,7 +33,7 @@ fi
 source .venv/bin/activate
 pip install -q -r requirements.txt
 
-# --dynamic-only: initialization + tool discovery + legacy async tools (2025-03-26) when advertised.
+# --dynamic-only: initialization + tool discovery (no full static suite).
 run_one() {
   local ver="$1"
   shift

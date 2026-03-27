@@ -46,7 +46,7 @@
     "fuse.js": "^7.0.0",
     "uuid": "^11.1.0",
     "yaml": "^2.8.3",
-    "zod": "^3.25.0"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.6.1",

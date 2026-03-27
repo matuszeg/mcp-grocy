@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { GrocyMcpServer } from '../src/server/mcp-server.js';
 import { createToolRegistry, ToolRegistry } from '../src/tools/index.js';
 
@@ -38,26 +39,6 @@ vi.mock('../src/api/client.js', () => ({
   }
 }));
 
-// Mock MCP SDK server (Vitest 4: `new Server()` needs a constructable function that returns the instance)
-const { mockServer } = vi.hoisted(() => ({
-  mockServer: {
-    setRequestHandler: vi.fn(),
-    connect: vi.fn(),
-    close: vi.fn(),
-    onerror: null as null,
-  },
-}));
-
-vi.mock('@modelcontextprotocol/sdk/server/index.js', () => ({
-  Server: vi.fn(function MockMcpServer() {
-    return mockServer;
-  }),
-}));
-
-vi.mock('@modelcontextprotocol/sdk/server/stdio.js', () => ({
-  StdioServerTransport: vi.fn()
-}));
-
 describe('Integration Tests', () => {
   let server: GrocyMcpServer;
   let toolRegistry: ToolRegistry;
@@ -87,11 +68,9 @@ describe('Integration Tests', () => {
       expect(server.serverInstance).toBeDefined();
     });
 
-    it('should register all request handlers', async () => {
+    it('should expose a real McpServer with tools/resources registered', async () => {
       server = await GrocyMcpServer.create();
-
-      // Registers tools/resources (+ legacy async tool) handlers on the SDK Server
-      expect(mockServer.setRequestHandler).toHaveBeenCalled();
+      expect(server.serverInstance).toBeInstanceOf(McpServer);
     });
   });
 
@@ -131,12 +110,14 @@ describe('Integration Tests', () => {
       server = await GrocyMcpServer.create();
     });
 
-    it('should register call tool handler', () => {
-      // Check that setRequestHandler was called
-      expect(mockServer.setRequestHandler).toHaveBeenCalled();
-      
-      // list + call + async tool trio + resources
-      expect(mockServer.setRequestHandler.mock.calls.length).toBeGreaterThanOrEqual(4);
+    it('wires tools/* and resources/* handlers on the underlying Server', () => {
+      const handlers = (server.serverInstance.server as unknown as { _requestHandlers: Map<string, unknown> })
+        ._requestHandlers;
+      expect(handlers.has('tools/list')).toBe(true);
+      expect(handlers.has('tools/call')).toBe(true);
+      expect(handlers.has('resources/list')).toBe(true);
+      expect(handlers.has('resources/templates/list')).toBe(true);
+      expect(handlers.has('resources/read')).toBe(true);
     });
 
     it('should validate tool registry has handlers for all definitions', () => {
@@ -153,28 +134,13 @@ describe('Integration Tests', () => {
     });
   });
 
-  describe('Resource Handler Integration', () => {
-    beforeEach(async () => {
-      server = await GrocyMcpServer.create();
-    });
-
-    it('should register resource handlers', () => {
-      // Check that setRequestHandler was called for resources
-      expect(mockServer.setRequestHandler).toHaveBeenCalled();
-      
-      // Should have resource handlers registered
-      expect(mockServer.setRequestHandler.mock.calls.length).toBeGreaterThanOrEqual(5);
-    });
-  });
-
   describe('Error Handling Integration', () => {
     beforeEach(async () => {
       server = await GrocyMcpServer.create();
     });
 
     it('should set up error handling', () => {
-      // Server should have error handler set up (function or null)
-      expect(mockServer.onerror).toBeDefined();
+      expect(typeof server.serverInstance.server.onerror).toBe('function');
     });
 
     it('should validate server initialization', () => {

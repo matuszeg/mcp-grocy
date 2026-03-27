@@ -1,124 +1,79 @@
 /**
- * Simplified MCP Server implementation
- * Reduced complexity and improved performance
+ * Grocy MCP server — McpServer API (registerTool / registerResource).
  */
 
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import {
-  CallToolRequestSchema,
-  CallToolResult,
-  ErrorCode,
-  ListToolsRequestSchema,
-  ListResourcesRequestSchema,
-  ReadResourceRequestSchema,
-  McpError,
-  type ServerCapabilities,
-} from '@modelcontextprotocol/sdk/types.js';
-import { z } from 'zod';
-import { VERSION, PACKAGE_NAME as SERVER_NAME } from '../version.js';
+import { CallToolResult, ErrorCode, McpError, type ServerCapabilities } from '@modelcontextprotocol/sdk/types.js';
+import { VERSION, PACKAGE_NAME, SERVER_NAME as RESOURCE_URI_SCHEME } from '../version.js';
 import { createToolRegistry } from '../tools/index.js';
 import type { ToolRegistry } from '../tools/types.js';
 import { config } from '../config/index.js';
 import { startHttpServer } from './http-server.js';
-import { ResourceHandler } from './resources.js';
+import { ResourceHandler, STATIC_MCP_RESOURCE_ENTRIES } from './resources.js';
+import { toolDefinitionInputZod } from './tool-input-zod.js';
 import { logger } from '../utils/logger.js';
 import { ErrorHandler } from '../utils/errors.js';
 
-/** MCP 2025-03-26 legacy async tools (Janix validator + older clients); not in typed ServerCapabilities. */
-const GROCY_SERVER_CAPABILITIES = {
-  tools: {
-    listChanged: false,
-    asyncSupported: true,
-  },
+const GROCY_SERVER_CAPABILITIES: ServerCapabilities = {
+  tools: {},
   resources: {},
-  prompts: {},
-} as unknown as ServerCapabilities;
+  prompts: {}
+};
 
-const ToolsCallAsyncRequestSchema = z.object({
-  method: z.literal('tools/call-async'),
-  params: z.object({
-    name: z.string(),
-    arguments: z.record(z.string(), z.unknown()).optional(),
-  }),
-  id: z.union([z.string(), z.number()]),
-});
-
-const ToolsResultRequestSchema = z.object({
-  method: z.literal('tools/result'),
-  params: z.object({
-    id: z.union([z.string(), z.number()]),
-  }),
-});
-
-const ToolsCancelRequestSchema = z.object({
-  method: z.literal('tools/cancel'),
-  params: z.object({
-    id: z.union([z.string(), z.number()]),
-  }),
-});
-
-type AsyncToolJob =
-  | { status: 'pending' }
-  | { status: 'completed'; result: CallToolResult }
-  | { status: 'error'; error: { code: number; message: string } }
-  | { status: 'cancelled' };
+const SERVER_INFO = {
+  name: PACKAGE_NAME,
+  version: VERSION,
+  websiteUrl: 'https://github.com/miguelangel-nubla/mcp-grocy',
+  description:
+    'MCP server for Grocy. Documentation: https://github.com/miguelangel-nubla/mcp-grocy/blob/main/README.md'
+};
 
 export class GrocyMcpServer {
-  private server: Server;
+  private static sigintHandlerRegistered = false;
+
+  private mcp: McpServer;
   private enabledTools = new Set<string>();
   private toolSubConfigs = new Map<string, Map<string, any>>();
   private toolAckTokens = new Map<string, string>();
   private resourceHandler: ResourceHandler;
   private toolRegistry: ToolRegistry;
-  private readonly asyncToolJobs = new Map<string, AsyncToolJob>();
 
   private constructor(
-    server: Server,
+    mcp: McpServer,
     toolRegistry: ToolRegistry,
     resourceHandler: ResourceHandler
   ) {
-    this.server = server;
+    this.mcp = mcp;
     this.toolRegistry = toolRegistry;
     this.resourceHandler = resourceHandler;
     this.parseToolConfiguration();
-    this.setupHandlers(this.server);
-    this.setupErrorHandling(this.server);
+    this.registerToolsAndResources(this.mcp);
+    this.setupErrorHandling(this.mcp);
   }
 
   static async create(): Promise<GrocyMcpServer> {
-    // Initialize components
     const [toolRegistry, resourceHandler] = await Promise.all([
       createToolRegistry(),
       Promise.resolve(new ResourceHandler())
     ]);
 
-    // Create server (SDK handles initialize / protocol negotiation)
-    const server = new Server(
-      {
-        name: SERVER_NAME,
-        version: VERSION,
-        websiteUrl: 'https://github.com/miguelangel-nubla/mcp-grocy',
-        description:
-          'MCP server for Grocy. Documentation: https://github.com/miguelangel-nubla/mcp-grocy/blob/main/README.md',
-      },
-      {
-        capabilities: GROCY_SERVER_CAPABILITIES,
-      }
-    );
+    const mcp = new McpServer(SERVER_INFO, {
+      capabilities: GROCY_SERVER_CAPABILITIES
+    });
 
-    return new GrocyMcpServer(server, toolRegistry, resourceHandler);
+    return new GrocyMcpServer(mcp, toolRegistry, resourceHandler);
   }
 
   private parseToolConfiguration(): void {
     const { enabledTools, toolSubConfigs, toolAckTokens } = config.parseToolConfiguration();
     this.toolSubConfigs = toolSubConfigs;
     this.toolAckTokens = toolAckTokens;
-    
+
     const validToolNames = new Set(this.toolRegistry.getToolNames());
-    
+
     if (enabledTools.size > 0) {
-      const invalidTools = Array.from(enabledTools).filter(tool => !validToolNames.has(tool));
+      const invalidTools = Array.from(enabledTools).filter((tool) => !validToolNames.has(tool));
       if (invalidTools.length > 0) {
         const validNames = Array.from(validToolNames).sort().join(', ');
         logger.error(`Invalid tools: ${invalidTools.join(', ')}. Valid: ${validNames}`, 'CONFIG');
@@ -131,12 +86,37 @@ export class GrocyMcpServer {
     }
   }
 
-  /**
-   * Shared implementation for tools/call and tools/call-async (2025-03-26).
-   */
-  private async executeToolCall(
+  private registerToolsAndResources(mcp: McpServer): void {
+    for (const def of this.toolRegistry.getDefinitions()) {
+      const inputSchema = toolDefinitionInputZod(def);
+      const registered = mcp.registerTool(
+        def.name,
+        { description: def.description, inputSchema },
+        async (args) => this.invokeTool(def.name, args as Record<string, unknown>)
+      );
+      if (!this.enabledTools.has(def.name)) {
+        registered.disable();
+      }
+    }
+
+    for (const entry of STATIC_MCP_RESOURCE_ENTRIES) {
+      const uri = `${RESOURCE_URI_SCHEME}://${entry.slug}`;
+      mcp.registerResource(
+        entry.name,
+        uri,
+        { description: entry.description, mimeType: entry.mimeType },
+        async (resourceUrl) => this.resourceHandler.readResource(resourceUrl.toString())
+      );
+    }
+
+    logger.config(
+      `Registered ${this.toolRegistry.getDefinitions().length} tool(s) (${this.enabledTools.size} enabled) and ${STATIC_MCP_RESOURCE_ENTRIES.length} resource(s) via McpServer`
+    );
+  }
+
+  private async invokeTool(
     toolName: string,
-    args: Record<string, unknown> | undefined
+    args: Record<string, unknown>
   ): Promise<CallToolResult> {
     if (!this.enabledTools.has(toolName)) {
       throw new McpError(
@@ -165,152 +145,35 @@ export class GrocyMcpServer {
       }
 
       return result as CallToolResult;
-    } catch (error: any) {
-      ErrorHandler.logError(error, `tool: ${toolName}`);
-      throw ErrorHandler.toMcpError(error, `${toolName} failed`);
-    }
-  }
-
-  /** Isolate async tool jobs per transport session (HTTP) vs stdio default. */
-  private jobStorageKey(sessionId: string | undefined, id: string | number): string {
-    const s = sessionId ?? 'stdio';
-    return `${s}:${String(id)}`;
-  }
-
-  private async runAsyncToolJob(
-    storageKey: string,
-    toolName: string,
-    args: Record<string, unknown> | undefined
-  ): Promise<void> {
-    const pending = this.asyncToolJobs.get(storageKey);
-    if (!pending || pending.status !== 'pending') {
-      return;
-    }
-    try {
-      const result = await this.executeToolCall(toolName, args);
-      const current = this.asyncToolJobs.get(storageKey);
-      if (!current || current.status === 'cancelled') {
-        return;
-      }
-      this.asyncToolJobs.set(storageKey, { status: 'completed', result });
     } catch (error: unknown) {
-      const current = this.asyncToolJobs.get(storageKey);
-      if (!current || current.status === 'cancelled') {
-        return;
-      }
-      const err = ErrorHandler.toMcpError(error as Error, `${toolName} failed`);
-      this.asyncToolJobs.set(storageKey, {
-        status: 'error',
-        error: { code: err.code, message: err.message }
-      });
+      ErrorHandler.logError(error, `tool: ${toolName}`);
+      throw ErrorHandler.toMcpError(error as Error, `${toolName} failed`);
     }
   }
 
-  private setupHandlers(server: Server): void {
-    // List tools
-    server.setRequestHandler(ListToolsRequestSchema, async () => {
-      const allTools = this.toolRegistry.getDefinitions();
-      const filteredTools = allTools.filter(tool => this.enabledTools.has(tool.name));
-      
-      logger.config(`Available tools: ${filteredTools.map(t => t.name).join(', ')}`);
-      return { tools: filteredTools };
-    });
-
-    // Call tool
-    server.setRequestHandler(CallToolRequestSchema, async (request) => {
-      const { name: toolName, arguments: args } = request.params;
-      return this.executeToolCall(toolName, args as Record<string, unknown> | undefined);
-    });
-
-    // Legacy async tools (MCP 2025-03-26) — run synchronously but expose poll/cancel API
-    server.setRequestHandler(ToolsCallAsyncRequestSchema, async (request, extra) => {
-      const { name: toolName, arguments: args } = request.params;
-      const storageKey = this.jobStorageKey(extra.sessionId, request.id);
-      const jobId = String(request.id);
-      this.asyncToolJobs.set(storageKey, { status: 'pending' });
-      void this.runAsyncToolJob(storageKey, toolName, args);
-      return { id: jobId, status: 'pending' as const };
-    });
-
-    server.setRequestHandler(ToolsResultRequestSchema, async (request, extra) => {
-      const storageKey = this.jobStorageKey(extra.sessionId, request.params.id);
-      const job = this.asyncToolJobs.get(storageKey);
-      if (!job) {
-        return {
-          status: 'error' as const,
-          error: { message: `Unknown tool call id: ${String(request.params.id)}` }
-        };
-      }
-      if (job.status === 'pending') {
-        return { status: 'pending' as const };
-      }
-      if (job.status === 'cancelled') {
-        return { status: 'cancelled' as const };
-      }
-      if (job.status === 'error') {
-        return { status: 'error' as const, error: job.error };
-      }
-      const { content, isError } = job.result;
-      return {
-        status: 'completed' as const,
-        content,
-        ...(isError !== undefined && { isError })
-      };
-    });
-
-    server.setRequestHandler(ToolsCancelRequestSchema, async (request, extra) => {
-      const storageKey = this.jobStorageKey(extra.sessionId, request.params.id);
-      const job = this.asyncToolJobs.get(storageKey);
-      if (!job) {
-        return { success: false };
-      }
-      if (job.status === 'pending') {
-        this.asyncToolJobs.set(storageKey, { status: 'cancelled' });
-        return { success: true };
-      }
-      return { success: false };
-    });
-
-    // Resources
-    server.setRequestHandler(ListResourcesRequestSchema, async () => {
-      return this.resourceHandler.listResources();
-    });
-
-    server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
-      return this.resourceHandler.readResource(request.params.uri);
-    });
-  }
-
-  private setupErrorHandling(server: Server): void {
-    server.onerror = (error) => {
+  private setupErrorHandling(mcp: McpServer): void {
+    mcp.server.onerror = (error) => {
       logger.error('MCP protocol error', 'MCP', { error });
     };
-    
+
+    if (GrocyMcpServer.sigintHandlerRegistered) {
+      return;
+    }
+    GrocyMcpServer.sigintHandlerRegistered = true;
     process.on('SIGINT', async () => {
       logger.info('Shutting down server...', 'SERVER');
-      await this.server.close();
+      await this.mcp.close();
       process.exit(0);
     });
   }
 
-  public createMcpServer(): Server {
-    const server = new Server(
-      {
-        name: SERVER_NAME,
-        version: VERSION,
-        websiteUrl: 'https://github.com/miguelangel-nubla/mcp-grocy',
-        description:
-          'MCP server for Grocy. Documentation: https://github.com/miguelangel-nubla/mcp-grocy/blob/main/README.md',
-      },
-      {
-        capabilities: GROCY_SERVER_CAPABILITIES,
-      }
-    );
-    
-    this.setupHandlers(server);
-    this.setupErrorHandling(server);
-    
-    return server;
+  public createMcpServer(): McpServer {
+    const mcp = new McpServer(SERVER_INFO, {
+      capabilities: GROCY_SERVER_CAPABILITIES
+    });
+    this.registerToolsAndResources(mcp);
+    this.setupErrorHandling(mcp);
+    return mcp;
   }
 
   public async start(): Promise<void> {
@@ -328,13 +191,12 @@ export class GrocyMcpServer {
 
     if (!httpTransportOnly) {
       const transport = new StdioServerTransport();
-      await this.server.connect(transport);
+      await this.mcp.connect(transport);
       logger.info('MCP server running on stdio', 'SERVER');
     } else {
       logger.info('MCP_HTTP_TRANSPORT_ONLY: stdio transport skipped', 'SERVER');
     }
 
-    // Start HTTP/SSE if enabled
     if (config.server.enable_http_server) {
       try {
         logger.config(`Starting HTTP server on port ${config.server.http_server_port}`);
@@ -353,9 +215,8 @@ export class GrocyMcpServer {
     }
   }
 
-  // Expose server for HTTP transport
-  public get serverInstance(): Server {
-    return this.server;
+  public get serverInstance(): McpServer {
+    return this.mcp;
   }
 }
 
