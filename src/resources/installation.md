@@ -71,7 +71,7 @@ yarn start
 
 ## npx
 
-You can also run the server directly using npx (Node.js 12.x or newer):
+You can also run the server directly using npx (Node.js 22 or newer; see `package.json` `engines`):
 
 ```bash
 npx -y mcp-grocy

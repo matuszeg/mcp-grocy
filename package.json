@@ -99,7 +99,7 @@
   },
   "homepage": "https://github.com/miguelangel-nubla/mcp-grocy#readme",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "config": {
     "supportedGrocyVersion": "4.5.0"
