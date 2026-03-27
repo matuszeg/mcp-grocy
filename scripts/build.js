@@ -23,11 +23,7 @@ export const PACKAGE_NAME = '${pkg.name.toLowerCase()}';
 export const SERVER_NAME = 'grocy-api';
 `;
 
-fs.writeFileSync(
-  path.resolve(__dirname, '../src/version.ts'), 
-  versionContent, 
-  'utf8'
-);
+fs.writeFileSync(path.resolve(__dirname, '../src/version.ts'), versionContent, 'utf8');
 
 console.log('Generated version.ts with package values');
 
@@ -44,7 +40,7 @@ if (fs.existsSync(srcResourcesDir)) {
 
 // Copy important root MD files (README, CHANGELOG, DOCS) to build/resources as well
 const rootDir = path.resolve(__dirname, '..');
-['README.md', 'CHANGELOG.md', 'DOCS.md'].forEach(file => {
+['README.md', 'CHANGELOG.md', 'DOCS.md'].forEach((file) => {
   const sourcePath = path.join(rootDir, file);
   if (fs.existsSync(sourcePath)) {
     fs.copySync(sourcePath, path.join(buildResourcesDir, file));

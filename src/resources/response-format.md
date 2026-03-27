@@ -29,7 +29,7 @@ The Grocy API testing tool (`test_request`) returns a comprehensive JSON respons
       "id": "1",
       "name": "Cookies",
       "description": null,
-      "product_group_id": "1",
+      "product_group_id": "1"
       // ... other product fields ...
     }
   },
@@ -75,6 +75,7 @@ These values can be set in your `.env` file for local development or in your pro
 ## Response Fields for `test_request`
 
 ### Request Details (`request`)
+
 - `url`: Full URL of the Grocy API endpoint called, including base URL and path.
 - `method`: HTTP method used (e.g., GET, POST, PUT, DELETE).
 - `headers`: Request headers sent to the Grocy API. Sensitive headers like `GROCY-API-KEY` will have their values redacted.
@@ -82,6 +83,7 @@ These values can be set in your `.env` file for local development or in your pro
 - `authMethod`: Authentication method used. For Grocy, this will typically be `apikey` if `GROCY_API_KEY` is configured, or `none`.
 
 ### Response Details (`response`)
+
 - `statusCode`: HTTP status code returned by the Grocy API (e.g., 200, 400, 401).
 - `statusText`: HTTP status message (e.g., "OK", "Bad Request").
 - `timing`: Duration of the API request in milliseconds.
@@ -89,6 +91,7 @@ These values can be set in your `.env` file for local development or in your pro
 - `body`: Response body content from the Grocy API. This will be the JSON data returned by Grocy.
 
 ### Validation (`validation`)
+
 - `isError`: Boolean, `true` if the HTTP status code is 400 or higher, indicating an error.
 - `messages`: Array of messages, including success messages or error details.
 - `truncated` (optional): If the response body exceeds `REST_RESPONSE_SIZE_LIMIT`, this object will contain details about the truncation.
@@ -102,6 +105,7 @@ These values can be set in your `.env` file for local development or in your pro
 Tools like `get_stock`, `get_products`, `add_shopping_list_item`, etc., directly return the JSON response from the Grocy API, stringified within the MCP tool response content.
 
 Example for `get_product` (if it existed as a specialized tool for a single product):
+
 ```json
 {
   "content": [
@@ -119,6 +123,7 @@ Example for `get_product` (if it existed as a specialized tool for a single prod
 ```
 
 If an error occurs with a specialized tool, the response will typically look like:
+
 ```json
 {
   "content": [
@@ -134,6 +139,7 @@ If an error occurs with a specialized tool, the response will typically look lik
 ## Error Response Example for `test_request`
 
 If the `test_request` tool encounters an API error (e.g., authentication failure):
+
 ```json
 {
   "request": {
@@ -149,17 +155,16 @@ If the `test_request` tool encounters an API error (e.g., authentication failure
     "statusCode": 401,
     "statusText": "Unauthorized",
     "timing": "50ms",
-    "headers": { /* ... headers ... */ },
+    "headers": {
+      /* ... headers ... */
+    },
     "body": {
       "error_message": "API key is missing or invalid."
     }
   },
   "validation": {
     "isError": true,
-    "messages": [
-      "Request failed with status 401",
-      "API key is missing or invalid."
-    ]
+    "messages": ["Request failed with status 401", "API key is missing or invalid."]
   }
 }
 ```

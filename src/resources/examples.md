@@ -22,188 +22,211 @@ For example, if the base URL is `https://your-own-demo.grocy.info`:
 ## Basic API Tools
 
 ### Get Current Stock
+
 ```typescript
 use_mcp_tool('grocy-api', 'get_stock', {});
 ```
 
 ### Get Volatile Stock Information
+
 ```typescript
 use_mcp_tool('grocy-api', 'get_stock_volatile', {
-  "includeDetails": true
+  includeDetails: true,
 });
 ```
 
 ### Get All Products
+
 ```typescript
 use_mcp_tool('grocy-api', 'get_products', {});
 ```
 
 ### Get All Shopping List Items
+
 ```typescript
 use_mcp_tool('grocy-api', 'get_shopping_list', {});
 ```
 
 ### Add Item to Shopping List
+
 ```typescript
 use_mcp_tool('grocy-api', 'add_shopping_list_item', {
-  "productId": 1,
-  "amount": 2,
-  "shoppingListId": 1,
-  "note": "Get the organic variety"
+  productId: 1,
+  amount: 2,
+  shoppingListId: 1,
+  note: 'Get the organic variety',
 });
 ```
 
 ### Purchase a Product
+
 ```typescript
 use_mcp_tool('grocy-api', 'inventory_transactions_purchase', {
-  "productId": 1,
-  "amount": 2,
-  "bestBeforeDate": "2024-12-31",
-  "price": 3.99,
-  "storeId": 1
+  productId: 1,
+  amount: 2,
+  bestBeforeDate: '2024-12-31',
+  price: 3.99,
+  storeId: 1,
 });
 ```
 
 ### Consume a Product
+
 ```typescript
 use_mcp_tool('grocy-api', 'inventory_stock_entry_consume', {
-  "productId": 1,
-  "amount": 1,
-  "spoiled": false
+  productId: 1,
+  amount: 1,
+  spoiled: false,
 });
 ```
 
 ## Recipe and Meal Planning
 
 ### Get All Recipes
+
 ```typescript
 use_mcp_tool('grocy-api', 'get_recipes', {});
 ```
 
 ### Check Recipe Fulfillment
+
 ```typescript
 use_mcp_tool('grocy-api', 'get_recipe_fulfillment', {
-  "recipeId": 1,
-  "servings": 2
+  recipeId: 1,
+  servings: 2,
 });
 ```
 
 ### Get Meal Plan for a Date
+
 ```typescript
 use_mcp_tool('grocy-api', 'get_meal_plan', {
-  "date": "2024-07-01"
+  date: '2024-07-01',
 });
 ```
 
 ### Get Meal Plan Sections
+
 ```typescript
 use_mcp_tool('grocy-api', 'get_meal_plan_sections', {});
 ```
 
 ### Add Recipe to Meal Plan
+
 ```typescript
 use_mcp_tool('grocy-api', 'add_recipe_to_meal_plan', {
-  "recipeId": 1,
-  "day": "2024-07-01", 
-  "servings": 2,
-  "section_id": 3
+  recipeId: 1,
+  day: '2024-07-01',
+  servings: 2,
+  section_id: 3,
 });
 ```
 
 Note: Use get_meal_plan_sections to find valid section IDs for your Grocy instance.
 
 ### Delete Recipe from Meal Plan
+
 ```typescript
 use_mcp_tool('grocy-api', 'delete_recipe_from_meal_plan', {
-  "date": "2024-07-01",
-  "meal_plan_entry_id": 123
+  date: '2024-07-01',
+  meal_plan_entry_id: 123,
 });
 ```
 
 Note: Use get_meal_plan to find the meal_plan_entry_id of the entry you want to remove.
 
 ### Consume Recipe Ingredients
+
 ```typescript
 use_mcp_tool('grocy-api', 'consume_recipe', {
-  "recipeId": 1,
-  "servings": 2
+  recipeId: 1,
+  servings: 2,
 });
 ```
 
 ## Chores and Tasks
 
 ### Get All Chores
+
 ```typescript
 use_mcp_tool('grocy-api', 'get_chores', {});
 ```
 
 ### Track Chore Execution
+
 ```typescript
 use_mcp_tool('grocy-api', 'track_chore_execution', {
-  "choreId": 1,
-  "executedBy": 1,
-  "tracked_time": "2024-06-30 15:30:00"
+  choreId: 1,
+  executedBy: 1,
+  tracked_time: '2024-06-30 15:30:00',
 });
 ```
 
 ### Get All Tasks
+
 ```typescript
 use_mcp_tool('grocy-api', 'get_tasks', {});
 ```
 
 ### Complete a Task
+
 ```typescript
 use_mcp_tool('grocy-api', 'complete_task', {
-  "taskId": 1,
-  "note": "Task completed successfully"
+  taskId: 1,
+  note: 'Task completed successfully',
 });
 ```
 
 ## Locations and Organization
 
 ### Get All Locations
+
 ```typescript
 use_mcp_tool('grocy-api', 'get_locations', {});
 ```
 
 ### Get All Shopping Locations (Stores)
+
 ```typescript
 use_mcp_tool('grocy-api', 'get_shopping_locations', {});
 ```
 
 ### Transfer Product Between Locations
+
 ```typescript
 use_mcp_tool('grocy-api', 'inventory_stock_entry_transfer', {
-  "productId": 1,
-  "amount": 1,
-  "locationIdFrom": 1,
-  "locationIdTo": 2,
-  "note": "Moving to kitchen"
+  productId: 1,
+  amount: 1,
+  locationIdFrom: 1,
+  locationIdTo: 2,
+  note: 'Moving to kitchen',
 });
 ```
 
 ## Advanced API Usage
 
 ### Custom API Call
+
 If you need to access a Grocy API endpoint not covered by the specialized tools:
 
 ```typescript
 use_mcp_tool('grocy-api', 'call_grocy_api', {
-  "endpoint": "objects/product_barcodes",
-  "method": "GET"
+  endpoint: 'objects/product_barcodes',
+  method: 'GET',
 });
 ```
 
 ### Raw API Testing
+
 For detailed testing with full control over the request:
 
 ```typescript
 use_mcp_tool('grocy-api', 'test_request', {
-  "method": "GET",
-  "endpoint": "/api/stock/products/by-barcode/1234567890",
-  "headers": {
-    "Accept-Language": "en-US"
-  }
+  method: 'GET',
+  endpoint: '/api/stock/products/by-barcode/1234567890',
+  headers: {
+    'Accept-Language': 'en-US',
+  },
 });
 ```
 
@@ -214,9 +237,11 @@ This document provides a comprehensive reference of all available endpoints in t
 ## Recipes
 
 ### GET `/api/grocy/recipes`
+
 Retrieves a list of all recipes.
 
 **Response:**
+
 ```json
 [
   {
@@ -228,12 +253,15 @@ Retrieves a list of all recipes.
 ```
 
 ### GET `/api/grocy/recipes/:recipeId`
+
 Retrieves details of a specific recipe by ID.
 
 **Parameters:**
+
 - `recipeId`: ID of the recipe to retrieve
 
 **Response:**
+
 ```json
 {
   "id": 1,
@@ -317,3 +345,4 @@ Retrieves details of a specific recipe by ID.
 - `entityType` can be 'chores', 'batteries', or 'tasks'
 - `id` is the ID of the execution, charge cycle, or task
 - Returns the result of the undo operation
+```

@@ -16,13 +16,13 @@ export abstract class BaseToolHandler {
       content: [
         {
           type: 'text' as const,
-          text: message || 'Operation completed successfully'
+          text: message || 'Operation completed successfully',
         },
         {
           type: 'text' as const,
-          text: JSON.stringify(data, null, 2)
-        }
-      ]
+          text: JSON.stringify(data, null, 2),
+        },
+      ],
     };
   }
 
@@ -34,14 +34,18 @@ export abstract class BaseToolHandler {
       content: [
         {
           type: 'text' as const,
-          text: `Error: ${message}`
+          text: `Error: ${message}`,
         },
-        ...(details ? [{
-          type: 'text' as const,
-          text: JSON.stringify(details, null, 2)
-        }] : [])
+        ...(details
+          ? [
+              {
+                type: 'text' as const,
+                text: JSON.stringify(details, null, 2),
+              },
+            ]
+          : []),
       ],
-      isError: true
+      isError: true,
     };
   }
 
@@ -49,7 +53,7 @@ export abstract class BaseToolHandler {
    * Validate required parameters
    */
   protected validateRequired(params: Record<string, any>, required: string[]): void {
-    const missing = required.filter(field => {
+    const missing = required.filter((field) => {
       const value = params[field];
       return value === undefined || value === null || value === '';
     });
@@ -57,7 +61,7 @@ export abstract class BaseToolHandler {
     if (missing.length > 0) {
       throw new ValidationError(
         `Missing required parameters: ${missing.join(', ')}`,
-        'parameter validation'
+        'parameter validation',
       );
     }
   }
@@ -69,15 +73,15 @@ export abstract class BaseToolHandler {
     endpoint: string,
     method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' = 'GET',
     data?: any,
-    options?: { queryParams?: Record<string, string> }
+    options?: { queryParams?: Record<string, string> },
   ): Promise<T> {
     return ErrorHandler.handleAsync(async () => {
       const response = await apiClient.request<T>(endpoint, {
         method,
         body: data,
-        queryParams: options?.queryParams || {}
+        queryParams: options?.queryParams || {},
       });
-      
+
       return response.data;
     }, `API ${method} ${endpoint}`);
   }
@@ -85,18 +89,16 @@ export abstract class BaseToolHandler {
   /**
    * Handle tool execution with standardized error handling
    */
-  protected async executeToolHandler(
-    handler: () => Promise<ToolResult>
-  ): Promise<ToolResult> {
+  protected async executeToolHandler(handler: () => Promise<ToolResult>): Promise<ToolResult> {
     try {
       return await handler();
     } catch (error) {
       ErrorHandler.logError(error, 'tool execution');
-      
+
       if (error instanceof ValidationError) {
         return this.createError(error.message);
       }
-      
+
       const message = error instanceof Error ? error.message : 'Internal error';
       return this.createError(`Tool execution failed: ${message}`);
     }
@@ -119,11 +121,11 @@ export abstract class BaseToolHandler {
    */
   protected filterFields<T extends Record<string, any>>(
     objects: T[],
-    fields: string[]
+    fields: string[],
   ): Partial<T>[] {
-    return objects.map(obj => {
+    return objects.map((obj) => {
       const filtered: Partial<T> = {};
-      fields.forEach(field => {
+      fields.forEach((field) => {
         if (field in obj) {
           filtered[field as keyof T] = obj[field];
         }
@@ -139,16 +141,16 @@ export abstract class BaseToolHandler {
     if (!value) {
       throw new ValidationError(`${paramName} is required`);
     }
-    
+
     if (!Array.isArray(value)) {
       throw new ValidationError(`${paramName} must be an array`);
     }
-    
+
     if (value.length === 0) {
       throw new ValidationError(`${paramName} cannot be empty`);
     }
-    
-    return value.map(v => String(v));
+
+    return value.map((v) => String(v));
   }
 
   /**
@@ -161,12 +163,12 @@ export abstract class BaseToolHandler {
       }
       return undefined;
     }
-    
+
     const num = Number(value);
     if (isNaN(num)) {
       throw new ValidationError(`${paramName} must be a valid number`);
     }
-    
+
     return num;
   }
 }

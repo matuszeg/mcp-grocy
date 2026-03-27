@@ -1,6 +1,6 @@
 name: Test
 
-run-name: "Test ${{ github.ref_name }}@${{ github.sha }}"
+run-name: 'Test ${{ github.ref_name }}@${{ github.sha }}'
 
 on:
   push:
@@ -35,6 +35,12 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
 
+      - name: ESLint
+        run: npm run lint
+
+      - name: Prettier
+        run: npm run format:check
+
       - name: Run tests
         run: npm test
 
@@ -46,9 +52,9 @@ jobs:
       fail-fast: false
       matrix:
         mcp_protocol_version:
-          - "2024-11-05"
-          - "2025-03-26"
-          - "2025-06-18"
+          - '2024-11-05'
+          - '2025-03-26'
+          - '2025-06-18'
     steps:
       - uses: actions/checkout@v4
 
@@ -66,7 +72,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: '3.12'
 
       - name: Run MCP Validator (stdio)
         working-directory: mcp-validator
@@ -90,7 +96,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      HTTP_SERVER_PORT: "8790"
+      HTTP_SERVER_PORT: '8790'
     steps:
       - uses: actions/checkout@v4
 
@@ -111,7 +117,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: '3.12'
 
       - name: HTTP compliance tests
         working-directory: mcp-validator

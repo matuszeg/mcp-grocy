@@ -13,14 +13,14 @@ inputs:
 runs:
   using: 'composite'
   steps:
-  - name: Setup Node.js
-    uses: actions/setup-node@v4
-    with:
-      node-version: ${{ inputs.node-version }}
-      cache: 'npm'
-      registry-url: 'https://registry.npmjs.org'
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: 'npm'
+        registry-url: 'https://registry.npmjs.org'
 
-  - name: Install dependencies
-    if: inputs.install-deps == 'true'
-    run: npm ci
-    shell: bash
+    - name: Install dependencies
+      if: inputs.install-deps == 'true'
+      run: npm ci
+      shell: bash

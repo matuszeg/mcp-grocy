@@ -5,14 +5,14 @@ import { InventoryToolHandlers } from './handlers.js';
 vi.mock('../../api/client.js', () => ({
   default: {
     request: vi.fn(),
-    get: vi.fn()
+    get: vi.fn(),
   },
   ApiError: class ApiError extends Error {
     constructor(message: string) {
       super(message);
       this.name = 'ApiError';
     }
-  }
+  },
 }));
 
 import apiClient from '../../api/client.js';
@@ -35,7 +35,7 @@ describe('InventoryToolHandlers', () => {
       const mockResponse = {
         data: [{ product_id: 1, amount: 10 }],
         status: 200,
-        headers: {}
+        headers: {},
       };
       mockApiClient.request.mockResolvedValue(mockResponse);
 
@@ -44,7 +44,7 @@ describe('InventoryToolHandlers', () => {
       expect(mockApiClient.request).toHaveBeenCalledWith('/stock', {
         method: 'GET',
         body: undefined,
-        queryParams: {}
+        queryParams: {},
       });
 
       expect(result.content[0].type).toBe('text');
@@ -62,7 +62,7 @@ describe('InventoryToolHandlers', () => {
       expect(mockApiClient.request).toHaveBeenCalledWith('/stock/volatile', {
         method: 'GET',
         body: undefined,
-        queryParams: {}
+        queryParams: {},
       });
     });
 
@@ -75,7 +75,7 @@ describe('InventoryToolHandlers', () => {
       expect(mockApiClient.request).toHaveBeenCalledWith('/stock/volatile', {
         method: 'GET',
         body: undefined,
-        queryParams: { include_details: 'true' }
+        queryParams: { include_details: 'true' },
       });
     });
   });
@@ -84,7 +84,9 @@ describe('InventoryToolHandlers', () => {
     it('should require productId and newAmount', async () => {
       const result1 = await handlers.inventoryProduct({});
       expect(result1.isError).toBe(true);
-      expect(result1.content[0].text).toContain('Missing required parameters: productId, newAmount');
+      expect(result1.content[0].text).toContain(
+        'Missing required parameters: productId, newAmount',
+      );
 
       const result2 = await handlers.inventoryProduct({ productId: 1 });
       expect(result2.isError).toBe(true);
@@ -103,7 +105,7 @@ describe('InventoryToolHandlers', () => {
         productId: 1,
         newAmount: 15,
         locationId: 2,
-        note: 'Inventory check'
+        note: 'Inventory check',
       };
 
       await handlers.inventoryProduct(args);
@@ -113,9 +115,9 @@ describe('InventoryToolHandlers', () => {
         body: expect.objectContaining({
           new_amount: 15,
           location_id: 2,
-          note: 'Inventory check'
+          note: 'Inventory check',
         }),
-        queryParams: {}
+        queryParams: {},
       });
     });
 
@@ -126,15 +128,15 @@ describe('InventoryToolHandlers', () => {
       await handlers.inventoryProduct({
         productId: 1,
         newAmount: 10,
-        bestBeforeDate: '2024-12-31'
+        bestBeforeDate: '2024-12-31',
       });
 
       expect(mockApiClient.request).toHaveBeenCalledWith('/stock/products/1/inventory', {
         method: 'POST',
         body: expect.objectContaining({
-          best_before_date: '2024-12-31'
+          best_before_date: '2024-12-31',
         }),
-        queryParams: {}
+        queryParams: {},
       });
     });
   });
@@ -155,9 +157,9 @@ describe('InventoryToolHandlers', () => {
       expect(mockApiClient.request).toHaveBeenCalledWith('/stock/products/1/add', {
         method: 'POST',
         body: expect.objectContaining({
-          amount: 1
+          amount: 1,
         }),
-        queryParams: {}
+        queryParams: {},
       });
     });
 
@@ -170,7 +172,7 @@ describe('InventoryToolHandlers', () => {
         amount: 3,
         price: 15.99,
         locationId: 3,
-        note: 'Bulk purchase'
+        note: 'Bulk purchase',
       };
 
       await handlers.purchaseProduct(args);
@@ -181,9 +183,9 @@ describe('InventoryToolHandlers', () => {
           amount: 3,
           price: 15.99,
           location_id: 3,
-          note: 'Bulk purchase'
+          note: 'Bulk purchase',
         }),
-        queryParams: {}
+        queryParams: {},
       });
     });
   });
@@ -205,9 +207,9 @@ describe('InventoryToolHandlers', () => {
         method: 'POST',
         body: expect.objectContaining({
           amount: 1,
-          transaction_type: 'consume'
+          transaction_type: 'consume',
         }),
-        queryParams: {}
+        queryParams: {},
       });
     });
 
@@ -215,10 +217,10 @@ describe('InventoryToolHandlers', () => {
       const mockResponse = { data: { success: true }, status: 200, headers: {} };
       mockApiClient.request.mockResolvedValue(mockResponse);
 
-      await handlers.consumeProduct({ 
+      await handlers.consumeProduct({
         productId: 1,
-        spoiled: true, 
-        amount: 2 
+        spoiled: true,
+        amount: 2,
       });
 
       expect(mockApiClient.request).toHaveBeenCalledWith('/stock/products/1/consume', {
@@ -226,9 +228,9 @@ describe('InventoryToolHandlers', () => {
         body: expect.objectContaining({
           amount: 2,
           spoiled: true,
-          transaction_type: 'inventory-correction'
+          transaction_type: 'inventory-correction',
         }),
-        queryParams: {}
+        queryParams: {},
       });
     });
   });
@@ -243,9 +245,9 @@ describe('InventoryToolHandlers', () => {
       expect(result2.isError).toBe(true);
       expect(result2.content[0].text).toContain('Missing required parameters');
 
-      const result3 = await handlers.transferProduct({ 
-        productId: 1, 
-        fromLocationId: 1 
+      const result3 = await handlers.transferProduct({
+        productId: 1,
+        fromLocationId: 1,
       });
       expect(result3.isError).toBe(true);
       expect(result3.content[0].text).toContain('Missing required parameters');
@@ -260,7 +262,7 @@ describe('InventoryToolHandlers', () => {
         toLocationId: 3,
         fromLocationId: 2,
         amount: 5,
-        note: 'Moving to pantry'
+        note: 'Moving to pantry',
       };
 
       await handlers.transferProduct(args);
@@ -271,9 +273,9 @@ describe('InventoryToolHandlers', () => {
           amount: 5,
           location_id_from: 2,
           location_id_to: 3,
-          note: 'Moving to pantry'
+          note: 'Moving to pantry',
         }),
-        queryParams: {}
+        queryParams: {},
       });
     });
   });
@@ -294,9 +296,9 @@ describe('InventoryToolHandlers', () => {
       expect(mockApiClient.request).toHaveBeenCalledWith('/stock/products/5/open', {
         method: 'POST',
         body: expect.objectContaining({
-          amount: 1
+          amount: 1,
         }),
-        queryParams: {}
+        queryParams: {},
       });
     });
 
@@ -310,9 +312,9 @@ describe('InventoryToolHandlers', () => {
         method: 'POST',
         body: expect.objectContaining({
           amount: 2,
-          note: 'Opening for family dinner'
+          note: 'Opening for family dinner',
         }),
-        queryParams: {}
+        queryParams: {},
       });
     });
   });
@@ -328,10 +330,10 @@ describe('InventoryToolHandlers', () => {
       const mockResponse = {
         data: [
           { id: 1, name: 'Product 1', description: 'Desc 1', location_id: 1 },
-          { id: 2, name: 'Product 2', description: 'Desc 2', location_id: 2 }
+          { id: 2, name: 'Product 2', description: 'Desc 2', location_id: 2 },
         ],
         status: 200,
-        headers: {}
+        headers: {},
       };
       mockApiClient.request.mockResolvedValue(mockResponse);
 
@@ -340,7 +342,7 @@ describe('InventoryToolHandlers', () => {
       expect(mockApiClient.request).toHaveBeenCalledWith('/objects/products', {
         method: 'GET',
         body: undefined,
-        queryParams: {}
+        queryParams: {},
       });
       expect(result.isError).toBeFalsy();
     });
@@ -355,11 +357,9 @@ describe('InventoryToolHandlers', () => {
 
     it('should fetch stock entries for product', async () => {
       const mockResponse = {
-        data: [
-          { id: 1, amount: 5, best_before_date: '2024-12-31', stock_id: 123 }
-        ],
+        data: [{ id: 1, amount: 5, best_before_date: '2024-12-31', stock_id: 123 }],
         status: 200,
-        headers: {}
+        headers: {},
       };
       mockApiClient.request.mockResolvedValue(mockResponse);
 
@@ -368,7 +368,7 @@ describe('InventoryToolHandlers', () => {
       expect(mockApiClient.request).toHaveBeenCalledWith('/stock/products/1/entries', {
         method: 'GET',
         body: undefined,
-        queryParams: {}
+        queryParams: {},
       });
     });
   });
@@ -383,12 +383,12 @@ describe('InventoryToolHandlers', () => {
     it('should search products with fuzzy matching', async () => {
       const mockProducts = [
         { id: 1, name: 'Apple Juice', description: 'Fresh apple juice', qu_id_stock: 1 },
-        { id: 2, name: 'Orange Juice', description: 'Fresh orange juice', qu_id_stock: 1 }
+        { id: 2, name: 'Orange Juice', description: 'Fresh orange juice', qu_id_stock: 1 },
       ];
       const mockLocations = [{ id: 1, name: 'Fridge' }];
       const mockUnits = [{ id: 1, name: 'liters' }];
       const mockStockEntries = [
-        { id: 1, amount: 2, best_before_date: '2024-12-31', location_id: '1' }
+        { id: 1, amount: 2, best_before_date: '2024-12-31', location_id: '1' },
       ];
 
       mockApiClient.request
@@ -402,7 +402,7 @@ describe('InventoryToolHandlers', () => {
       expect(mockApiClient.request).toHaveBeenCalledWith('/objects/products', {
         method: 'GET',
         body: undefined,
-        queryParams: {}
+        queryParams: {},
       });
       expect(result.isError).toBeFalsy();
     });
@@ -436,7 +436,7 @@ describe('InventoryToolHandlers', () => {
       expect(mockApiClient.request).toHaveBeenCalledWith('/stock/products/1/printlabel', {
         method: 'GET',
         body: undefined,
-        queryParams: {}
+        queryParams: {},
       });
       expect(result.isError).toBeFalsy();
     });
@@ -466,7 +466,7 @@ describe('InventoryToolHandlers', () => {
     it('should print label when validation passes', async () => {
       const mockStockEntry = { product_id: 1 };
       const mockPrintResponse = { data: { success: true }, status: 200, headers: {} };
-      
+
       mockApiClient.request
         .mockResolvedValueOnce({ data: mockStockEntry, status: 200, headers: {} })
         .mockResolvedValueOnce(mockPrintResponse);
@@ -476,12 +476,12 @@ describe('InventoryToolHandlers', () => {
       expect(mockApiClient.request).toHaveBeenCalledWith('/stock/entry/1', {
         method: 'GET',
         body: undefined,
-        queryParams: {}
+        queryParams: {},
       });
       expect(mockApiClient.request).toHaveBeenCalledWith('/stock/entry/1/printlabel', {
         method: 'GET',
         body: undefined,
-        queryParams: {}
+        queryParams: {},
       });
       expect(result.isError).toBeFalsy();
     });
@@ -517,23 +517,23 @@ describe('InventoryToolHandlers', () => {
     it('should consume stock entry when validation passes', async () => {
       const mockStockEntry = { product_id: 1, stock_id: 'abc123', location_id: 1 };
       const mockConsumeResponse = { data: { success: true }, status: 200, headers: {} };
-      
+
       mockApiClient.request
         .mockResolvedValueOnce({ data: mockStockEntry, status: 200, headers: {} })
         .mockResolvedValueOnce(mockConsumeResponse);
 
-      const result = await handlers.consumeStockEntry({ 
-        stockId: 1, 
-        productId: 1, 
+      const result = await handlers.consumeStockEntry({
+        stockId: 1,
+        productId: 1,
         amount: 2,
         spoiled: true,
-        note: 'Test note'
+        note: 'Test note',
       });
 
       expect(mockApiClient.request).toHaveBeenCalledWith('/stock/entry/1', {
         method: 'GET',
         body: undefined,
-        queryParams: {}
+        queryParams: {},
       });
       expect(mockApiClient.request).toHaveBeenCalledWith('/stock/products/1/consume', {
         method: 'POST',
@@ -542,9 +542,9 @@ describe('InventoryToolHandlers', () => {
           spoiled: true,
           stock_entry_id: 'abc123',
           location_id: 1,
-          note: 'Test note'
+          note: 'Test note',
         },
-        queryParams: {}
+        queryParams: {},
       });
       expect(result.isError).toBeFalsy();
     });
@@ -569,11 +569,11 @@ describe('InventoryToolHandlers', () => {
       const mockStockEntry = { product_id: 2, stock_id: 'abc123', location_id: 1 };
       mockApiClient.request.mockResolvedValue({ data: mockStockEntry, status: 200, headers: {} });
 
-      const result = await handlers.transferStockEntry({ 
-        stockId: 1, 
-        productId: 1, 
-        amount: 2, 
-        locationIdTo: 3 
+      const result = await handlers.transferStockEntry({
+        stockId: 1,
+        productId: 1,
+        amount: 2,
+        locationIdTo: 3,
       });
 
       expect(result.isError).toBe(true);
@@ -583,23 +583,23 @@ describe('InventoryToolHandlers', () => {
     it('should transfer stock entry when validation passes', async () => {
       const mockStockEntry = { product_id: 1, stock_id: 'abc123', location_id: 1 };
       const mockTransferResponse = { data: { success: true }, status: 200, headers: {} };
-      
+
       mockApiClient.request
         .mockResolvedValueOnce({ data: mockStockEntry, status: 200, headers: {} })
         .mockResolvedValueOnce(mockTransferResponse);
 
-      const result = await handlers.transferStockEntry({ 
-        stockId: 1, 
-        productId: 1, 
+      const result = await handlers.transferStockEntry({
+        stockId: 1,
+        productId: 1,
         amount: 2,
         locationIdTo: 3,
-        note: 'Transfer note'
+        note: 'Transfer note',
       });
 
       expect(mockApiClient.request).toHaveBeenCalledWith('/stock/entry/1', {
         method: 'GET',
         body: undefined,
-        queryParams: {}
+        queryParams: {},
       });
       expect(mockApiClient.request).toHaveBeenCalledWith('/stock/products/1/transfer', {
         method: 'POST',
@@ -609,9 +609,9 @@ describe('InventoryToolHandlers', () => {
           location_id_to: 3,
           transaction_type: 'transfer',
           stock_entry_id: 'abc123',
-          note: 'Transfer note'
+          note: 'Transfer note',
         },
-        queryParams: {}
+        queryParams: {},
       });
       expect(result.isError).toBeFalsy();
     });
@@ -645,22 +645,22 @@ describe('InventoryToolHandlers', () => {
     it('should open stock entry when validation passes', async () => {
       const mockStockEntry = { product_id: 1, stock_id: 'abc123', location_id: 1 };
       const mockOpenResponse = { data: { success: true }, status: 200, headers: {} };
-      
+
       mockApiClient.request
         .mockResolvedValueOnce({ data: mockStockEntry, status: 200, headers: {} })
         .mockResolvedValueOnce(mockOpenResponse);
 
-      const result = await handlers.openStockEntry({ 
-        stockId: 1, 
-        productId: 1, 
+      const result = await handlers.openStockEntry({
+        stockId: 1,
+        productId: 1,
         amount: 1,
-        note: 'Opening note'
+        note: 'Opening note',
       });
 
       expect(mockApiClient.request).toHaveBeenCalledWith('/stock/entry/1', {
         method: 'GET',
         body: undefined,
-        queryParams: {}
+        queryParams: {},
       });
       expect(mockApiClient.request).toHaveBeenCalledWith('/stock/products/1/open', {
         method: 'POST',
@@ -668,9 +668,9 @@ describe('InventoryToolHandlers', () => {
           amount: 1,
           stock_entry_id: 'abc123',
           location_id: 1,
-          note: 'Opening note'
+          note: 'Opening note',
         },
-        queryParams: {}
+        queryParams: {},
       });
       expect(result.isError).toBeFalsy();
     });
@@ -683,13 +683,13 @@ describe('InventoryToolHandlers', () => {
         note: 'Original note',
         best_before_date: '2024-12-31',
         purchased_date: '2024-01-01',
-        location_id: 1
+        location_id: 1,
       };
       const mockUpdateResponse = { data: { success: true }, status: 200, headers: {} };
-      
+
       mockApiClient.request.mockResolvedValue(mockUpdateResponse);
 
-      const getUnitForm = (amount: number) => amount === 1 ? 'piece' : 'pieces';
+      const getUnitForm = (amount: number) => (amount === 1 ? 'piece' : 'pieces');
       const result = await handlers.splitStockEntry(mockOriginalEntry, [5], getUnitForm);
 
       expect(mockApiClient.request).toHaveBeenCalledWith('/stock/entry/123', {
@@ -700,17 +700,19 @@ describe('InventoryToolHandlers', () => {
           note: 'Original note - 123 - 1',
           best_before_date: '2024-12-31',
           purchased_date: '2024-01-01',
-          location_id: 1
+          location_id: 1,
         },
-        queryParams: {}
+        queryParams: {},
       });
 
-      expect(result).toEqual([{
-        stockId: 123,
-        amount: 5,
-        type: 'updated',
-        unit: 'pieces'
-      }]);
+      expect(result).toEqual([
+        {
+          stockId: 123,
+          amount: 5,
+          type: 'updated',
+          unit: 'pieces',
+        },
+      ]);
     });
 
     it('should split multiple amounts correctly', async () => {
@@ -720,22 +722,24 @@ describe('InventoryToolHandlers', () => {
         note: 'Original note',
         best_before_date: '2024-12-31',
         purchased_date: '2024-01-01',
-        location_id: 1
+        location_id: 1,
       };
       const mockUpdateResponse = { data: { success: true }, status: 200, headers: {} };
       const mockCreateResponse = [{ stock_id: 'new123', id: 'new123' }];
-      const mockStockResponse = [{
-        id: 789,
-        product_id: 456,
-        stock_id: 'new123'
-      }];
-      
+      const mockStockResponse = [
+        {
+          id: 789,
+          product_id: 456,
+          stock_id: 'new123',
+        },
+      ];
+
       mockApiClient.request
         .mockResolvedValueOnce(mockUpdateResponse) // Update first entry
         .mockResolvedValueOnce({ data: mockCreateResponse, status: 200, headers: {} }) // Create second entry
         .mockResolvedValueOnce({ data: mockStockResponse, status: 200, headers: {} }); // Get stock entries
 
-      const getUnitForm = (amount: number) => amount === 1 ? 'piece' : 'pieces';
+      const getUnitForm = (amount: number) => (amount === 1 ? 'piece' : 'pieces');
       const result = await handlers.splitStockEntry(mockOriginalEntry, [3, 2], getUnitForm);
 
       expect(result).toHaveLength(2);
@@ -743,13 +747,13 @@ describe('InventoryToolHandlers', () => {
         stockId: 123,
         amount: 3,
         type: 'updated',
-        unit: 'pieces'
+        unit: 'pieces',
       });
       expect(result[1]).toEqual({
         stockId: 789,
         amount: 2,
         type: 'created',
-        unit: 'pieces'
+        unit: 'pieces',
       });
     });
 
@@ -758,12 +762,14 @@ describe('InventoryToolHandlers', () => {
       const getUnitForm = () => 'pieces';
 
       // Test single amount validation (different error format)
-      await expect(handlers.splitStockEntry(mockOriginalEntry, [0], getUnitForm))
-        .rejects.toThrow('Invalid amount: 0');
+      await expect(handlers.splitStockEntry(mockOriginalEntry, [0], getUnitForm)).rejects.toThrow(
+        'Invalid amount: 0',
+      );
 
       // Test multiple amounts validation (different error format)
-      await expect(handlers.splitStockEntry(mockOriginalEntry, [1, -1], getUnitForm))
-        .rejects.toThrow('Invalid amount at index 1: -1');
+      await expect(
+        handlers.splitStockEntry(mockOriginalEntry, [1, -1], getUnitForm),
+      ).rejects.toThrow('Invalid amount at index 1: -1');
     });
   });
 });

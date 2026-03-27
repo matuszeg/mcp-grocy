@@ -14,28 +14,28 @@ export const recipeModule: ToolModule = {
     recipes_management_get_by_id: handlers.getRecipeById,
     recipes_management_create: handlers.createRecipe,
     recipes_management_print_label: handlers.printRecipeLabel,
-    
+
     // Recipe Fulfillment
     recipes_fulfillment_get: handlers.getRecipeFulfillment,
     recipes_fulfillment_get_all: handlers.getAllRecipeFulfillment,
-    
+
     // Meal Planning
     recipes_mealplan_get: handlers.getMealPlan,
     recipes_mealplan_get_sections: handlers.getMealPlanSections,
     recipes_mealplan_add_recipe: handlers.addRecipeToMealPlan,
     recipes_mealplan_delete_entry: handlers.deleteRecipeFromMealPlan,
-    
+
     // Recipe Cooking
     recipes_cooking_consume: handlers.consumeRecipe,
     recipes_cooking_complete: handlers.cookedSomething,
-    
+
     // Shopping Integration
     recipes_shopping_add_all_products: handlers.addAllProductsToShopping,
-    recipes_shopping_add_missing_products: handlers.addMissingProductsToShopping
+    recipes_shopping_add_missing_products: handlers.addMissingProductsToShopping,
   },
   validators: {
-    recipes_cooking_complete: validateCompleteSubConfigs
-  }
+    recipes_cooking_complete: validateCompleteSubConfigs,
+  },
 };
 
 export * from './definitions.js';

@@ -45,9 +45,12 @@ function createMcpAccessGate(accessToken: string | undefined) {
       error: {
         code: -32000,
         message:
-          'Unauthorized: configure MCP_HTTP_ACCESS_TOKEN and send Authorization: Bearer, X-MCP-Access-Token, or access_token query (GET only)'
+          'Unauthorized: configure MCP_HTTP_ACCESS_TOKEN and send Authorization: Bearer, X-MCP-Access-Token, or access_token query (GET only)',
       },
-      id: (req.body && typeof req.body === 'object' && 'id' in req.body ? (req.body as { id?: unknown }).id : null) ?? null
+      id:
+        (req.body && typeof req.body === 'object' && 'id' in req.body
+          ? (req.body as { id?: unknown }).id
+          : null) ?? null,
     });
   };
 }
@@ -56,248 +59,270 @@ function createMcpAccessGate(accessToken: string | undefined) {
 export function startHttpServer(
   mcpServer: McpServer | (() => McpServer),
   port: number = 8080,
-  security: HttpServerSecurityOptions
+  security: HttpServerSecurityOptions,
 ): Promise<http.Server> {
   return new Promise((resolve, reject) => {
-  const app = express();
-  const mcpAccessGate = createMcpAccessGate(security.accessToken);
+    const app = express();
+    const mcpAccessGate = createMcpAccessGate(security.accessToken);
 
-  if (security.accessToken) {
-    logger.config('HTTP MCP access token is enabled (Bearer, X-MCP-Access-Token, or access_token on GET)');
-  }
-  
-  // Enable JSON body parsing with increased limit
-  app.use(express.json({
-    limit: '10mb'
-  }));
-  
-  app.use(cors({
-    origin: security.corsOrigin,
-    methods: ['GET', 'POST', 'OPTIONS', 'DELETE'],
-    allowedHeaders: [
-      'Origin',
-      'X-Requested-With',
-      'Content-Type',
-      'Accept',
-      'Mcp-Session-Id',
-      'Authorization',
-      'X-MCP-Access-Token'
-    ],
-    exposedHeaders: ['Mcp-Session-Id', 'Content-Type'],
-    optionsSuccessStatus: 200
-  }));
-
-  // Simple health check endpoint
-  app.get('/', (_req, res) => {
-    res.json({
-      status: 'ok',
-      service: SERVER_NAME,
-      version: VERSION,
-      message: 'MCP server is running',
-      endpoints: {
-        streamable: '/mcp',
-        sse: '/mcp/sse',
-        sseMessages: '/mcp/messages'
-      }
-    });
-  });
-
-  // Session management for transports
-  const streamableTransports: Record<string, StreamableHTTPServerTransport> = {};
-  const sseTransports: Record<string, SSEServerTransport> = {};
-  const sseServerInstances: Record<string, McpServer> = {};
-
-  // Simplified request logging
-  app.use((req, _res, next) => {
-    logger.server(`${req.method} ${req.path}`);
-    next();
-  });
-
-  // Helper function to get server instance (shared or new)
-  const getServerInstance = () => {
-    if (typeof mcpServer === 'function') {
-      return mcpServer(); // Create new instance
-    } else {
-      return mcpServer; // Use shared instance
+    if (security.accessToken) {
+      logger.config(
+        'HTTP MCP access token is enabled (Bearer, X-MCP-Access-Token, or access_token on GET)',
+      );
     }
-  };
 
-  // Streamable HTTP endpoint (Context7 modern)
-  app.all('/mcp', mcpAccessGate, async (req, res) => {
-    try {
-      const clientSessionId = req.headers['mcp-session-id'] as string | undefined;
-      let transport: StreamableHTTPServerTransport | undefined = undefined;
+    // Enable JSON body parsing with increased limit
+    app.use(
+      express.json({
+        limit: '10mb',
+      }),
+    );
 
-      // Accept header check (can be done early)
-      const accept = req.headers.accept || '';
+    app.use(
+      cors({
+        origin: security.corsOrigin,
+        methods: ['GET', 'POST', 'OPTIONS', 'DELETE'],
+        allowedHeaders: [
+          'Origin',
+          'X-Requested-With',
+          'Content-Type',
+          'Accept',
+          'Mcp-Session-Id',
+          'Authorization',
+          'X-MCP-Access-Token',
+        ],
+        exposedHeaders: ['Mcp-Session-Id', 'Content-Type'],
+        optionsSuccessStatus: 200,
+      }),
+    );
 
-      // Home Assistant might not send perfect accept headers, so we log a warning instead of blocking
-      if (!accept.includes('application/json') && !accept.includes('text/event-stream')) {
-        logger.warn('Client should accept application/json or text/event-stream', 'server');
+    // Simple health check endpoint
+    app.get('/', (_req, res) => {
+      res.json({
+        status: 'ok',
+        service: SERVER_NAME,
+        version: VERSION,
+        message: 'MCP server is running',
+        endpoints: {
+          streamable: '/mcp',
+          sse: '/mcp/sse',
+          sseMessages: '/mcp/messages',
+        },
+      });
+    });
+
+    // Session management for transports
+    const streamableTransports: Record<string, StreamableHTTPServerTransport> = {};
+    const sseTransports: Record<string, SSEServerTransport> = {};
+    const sseServerInstances: Record<string, McpServer> = {};
+
+    // Simplified request logging
+    app.use((req, _res, next) => {
+      logger.server(`${req.method} ${req.path}`);
+      next();
+    });
+
+    // Helper function to get server instance (shared or new)
+    const getServerInstance = () => {
+      if (typeof mcpServer === 'function') {
+        return mcpServer(); // Create new instance
+      } else {
+        return mcpServer; // Use shared instance
       }
+    };
 
-      const isInitializeRequest = req.body?.method === 'initialize';
+    // Streamable HTTP endpoint (Context7 modern)
+    app.all('/mcp', mcpAccessGate, async (req, res) => {
+      try {
+        const clientSessionId = req.headers['mcp-session-id'] as string | undefined;
+        let transport: StreamableHTTPServerTransport | undefined = undefined;
 
-      if (clientSessionId && !isInitializeRequest) {
-        transport = streamableTransports[clientSessionId];
+        // Accept header check (can be done early)
+        const accept = req.headers.accept || '';
+
+        // Home Assistant might not send perfect accept headers, so we log a warning instead of blocking
+        if (!accept.includes('application/json') && !accept.includes('text/event-stream')) {
+          logger.warn('Client should accept application/json or text/event-stream', 'server');
+        }
+
+        const isInitializeRequest = req.body?.method === 'initialize';
+
+        if (clientSessionId && !isInitializeRequest) {
+          transport = streamableTransports[clientSessionId];
+          if (!transport) {
+            logger.warn(`Session ${clientSessionId} not found, returning 400`, 'server');
+            res.status(400).json({
+              jsonrpc: '2.0',
+              error: {
+                code: -32001,
+                message: `Invalid or expired session ID: ${clientSessionId}. Please re-initialize.`,
+              },
+              id: req.body?.id || null,
+            });
+            return;
+          }
+        } else {
+          // Create new transport for new sessions OR initialize requests
+          // If it's an initialize request with a stale session ID, we start fresh
+          if (clientSessionId) {
+            logger.info(
+              `Received initialize request with stale session ID ${clientSessionId}, starting new session`,
+              'server',
+            );
+          }
+          // No session ID provided by client, create new transport
+          const newGeneratedSessionId = randomUUID();
+
+          const newTransportInstance = new StreamableHTTPServerTransport({
+            sessionIdGenerator: () => newGeneratedSessionId,
+            enableJsonResponse: true,
+          });
+
+          transport = newTransportInstance;
+          streamableTransports[newGeneratedSessionId] = transport;
+
+          transport.onclose = () => {
+            const closedSessionId = transport?.sessionId || newGeneratedSessionId;
+            delete streamableTransports[closedSessionId];
+          };
+
+          const serverInstance = getServerInstance();
+          await serverInstance.connect(transport as Transport);
+        }
+
         if (!transport) {
-          logger.warn(`Session ${clientSessionId} not found, returning 400`, 'server');
-          res.status(400).json({
+          logger.error(
+            'Transport is undefined before handling request. This should not happen.',
+            'server',
+          );
+          res.status(500).json({
             jsonrpc: '2.0',
-            error: { code: -32001, message: `Invalid or expired session ID: ${clientSessionId}. Please re-initialize.` },
-            id: req.body?.id || null
+            error: { code: -32000, message: 'Internal server error: Transport not available' },
+            id: req.body?.id || null,
           });
           return;
         }
-      } else {
-        // Create new transport for new sessions OR initialize requests
-        // If it's an initialize request with a stale session ID, we start fresh
-        if (clientSessionId) {
-          logger.info(`Received initialize request with stale session ID ${clientSessionId}, starting new session`, 'server');
-        }
-        // No session ID provided by client, create new transport
-        const newGeneratedSessionId = randomUUID();
-        
-        const newTransportInstance = new StreamableHTTPServerTransport({
-          sessionIdGenerator: () => newGeneratedSessionId,
-          enableJsonResponse: true
-        });
-        
-        transport = newTransportInstance;
-        streamableTransports[newGeneratedSessionId] = transport;
 
-        transport.onclose = () => {
-          const closedSessionId = transport?.sessionId || newGeneratedSessionId;
-          delete streamableTransports[closedSessionId];
+        if (transport.sessionId) {
+          res.setHeader('Mcp-Session-Id', transport.sessionId);
+        }
+
+        await transport.handleRequest(req, res, req.body);
+      } catch (error) {
+        logger.error('Failed to handle streamable HTTP request', 'server', { error });
+
+        // Send error response if headers not sent yet
+        if (!res.headersSent) {
+          res.status(500).json({
+            jsonrpc: '2.0',
+            error: {
+              code: -32000,
+              message: `Internal server error: ${error instanceof Error ? error.message : String(error)}`,
+            },
+            id: req.body?.id || null,
+          });
+        }
+      }
+    });
+
+    // SSE endpoint
+    app.get('/mcp/sse', mcpAccessGate, async (_req, res) => {
+      try {
+        // Set SSE headers before creating transport
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+
+        const transport = new SSEServerTransport('/mcp/messages', res);
+        const sessionId = transport.sessionId;
+
+        logger.info(`Created SSE session: ${sessionId}`, 'DEBUG');
+
+        sseTransports[sessionId] = transport;
+
+        // Handle connection cleanup
+        const cleanup = () => {
+          delete sseTransports[sessionId];
+          delete sseServerInstances[sessionId];
         };
 
-        const serverInstance = getServerInstance();
-        await serverInstance.connect(transport as Transport);
-      }
+        res.on('close', cleanup);
+        res.on('error', (err) => {
+          logger.error(`SSE connection error for session ${sessionId}`, 'server', { error: err });
+          cleanup();
+        });
 
-      if (!transport) {
-        logger.error('Transport is undefined before handling request. This should not happen.', 'server');
-        res.status(500).json({ jsonrpc: '2.0', error: { code: -32000, message: 'Internal server error: Transport not available' }, id: req.body?.id || null });
+        // Create isolated server instance for this SSE connection to prevent response cross-talk
+        const isolatedServer = getServerInstance();
+        sseServerInstances[sessionId] = isolatedServer;
+
+        // Connect transport to isolated MCP server (non-blocking)
+        isolatedServer.connect(transport).catch((error) => {
+          logger.error(`Failed to connect SSE transport for session ${sessionId}`, 'server', {
+            error,
+          });
+          cleanup();
+          if (!res.headersSent) {
+            res.status(500).end();
+          }
+        });
+
+        // Send initial comment to keep connection alive
+        res.write(': connected\n\n');
+      } catch (error) {
+        logger.error('Failed to handle SSE connection', 'server', { error });
+
+        if (!res.headersSent) {
+          res.status(500).send('Internal Server Error');
+        } else {
+          res.end();
+        }
+      }
+    });
+
+    // Message endpoint for SSE
+    app.post('/mcp/messages', mcpAccessGate, async (req, res) => {
+      const sessionId = req.query.sessionId as string;
+
+      if (!sessionId) {
+        logger.error('Missing sessionId parameter in SSE message', 'server');
+        res.status(400).json({
+          error: 'Missing sessionId parameter',
+          status: 400,
+        });
         return;
       }
 
-      if (transport.sessionId) {
-        res.setHeader('Mcp-Session-Id', transport.sessionId);
-      }
-      
-      await transport.handleRequest(req, res, req.body);
-
-    } catch (error) {
-      logger.error('Failed to handle streamable HTTP request', 'server', { error });
-      
-      // Send error response if headers not sent yet
-      if (!res.headersSent) {
-        res.status(500).json({
-          jsonrpc: '2.0',
-          error: {
-            code: -32000,
-            message: `Internal server error: ${error instanceof Error ? error.message : String(error)}`
-          },
-          id: req.body?.id || null
-        });
-      }
-    }
-  });
-
-  // SSE endpoint
-  app.get('/mcp/sse', mcpAccessGate, async (_req, res) => {
-    try {
-      // Set SSE headers before creating transport
-      res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.setHeader('Connection', 'keep-alive');
-      
-      const transport = new SSEServerTransport('/mcp/messages', res);
-      const sessionId = transport.sessionId;
-      
-      logger.info(`Created SSE session: ${sessionId}`, 'DEBUG');
-      
-      sseTransports[sessionId] = transport;
-      
-      // Handle connection cleanup
-      const cleanup = () => {
-        delete sseTransports[sessionId];
-        delete sseServerInstances[sessionId];
-      };
-      
-      res.on('close', cleanup);
-      res.on('error', (err) => {
-        logger.error(`SSE connection error for session ${sessionId}`, 'server', { error: err });
-        cleanup();
-      });
-      
-      // Create isolated server instance for this SSE connection to prevent response cross-talk
-      const isolatedServer = getServerInstance();
-      sseServerInstances[sessionId] = isolatedServer;
-      
-      // Connect transport to isolated MCP server (non-blocking)
-      isolatedServer.connect(transport).catch((error) => {
-        logger.error(`Failed to connect SSE transport for session ${sessionId}`, 'server', { error });
-        cleanup();
-        if (!res.headersSent) {
-          res.status(500).end();
+      const transport = sseTransports[sessionId];
+      if (transport) {
+        logger.info(`Found active transport for session ${sessionId}`, 'DEBUG');
+        try {
+          await transport.handlePostMessage(req, res, req.body);
+        } catch (error) {
+          logger.error(`Failed to handle SSE message for session ${sessionId}`, 'server', {
+            error,
+          });
+          res.status(500).json({
+            error: `Internal server error: ${error instanceof Error ? error.message : String(error)}`,
+            status: 500,
+          });
         }
-      });
-      
-      // Send initial comment to keep connection alive
-      res.write(': connected\n\n');
-    } catch (error) {
-      logger.error('Failed to handle SSE connection', 'server', { error });
-      
-      if (!res.headersSent) {
-        res.status(500).send('Internal Server Error');
       } else {
-        res.end();
-      }
-    }
-  });
-
-  // Message endpoint for SSE
-  app.post('/mcp/messages', mcpAccessGate, async (req, res) => {
-    const sessionId = req.query.sessionId as string;
-    
-    if (!sessionId) {
-      logger.error('Missing sessionId parameter in SSE message', 'server');
-      res.status(400).json({
-        error: 'Missing sessionId parameter',
-        status: 400
-      });
-      return;
-    }
-    
-    const transport = sseTransports[sessionId];
-    if (transport) {
-      logger.info(`Found active transport for session ${sessionId}`, 'DEBUG');
-      try {
-        await transport.handlePostMessage(req, res, req.body);
-      } catch (error) {
-        logger.error(`Failed to handle SSE message for session ${sessionId}`, 'server', { error });
-        res.status(500).json({
-          error: `Internal server error: ${error instanceof Error ? error.message : String(error)}`,
-          status: 500
+        res.status(404).json({
+          error: `No active SSE connection found for session ID: ${sessionId}`,
+          status: 404,
         });
       }
-    } else {
-      res.status(404).json({
-        error: `No active SSE connection found for session ID: ${sessionId}`,
-        status: 404
-      });
-    }
-  });
+    });
 
     // Create HTTP server with explicit error handling
     const server = http.createServer(app);
-    
+
     server.on('error', (error) => {
       logger.error(`HTTP server error: ${error.message}`, 'server');
       reject(error);
     });
-    
+
     // Start the server
     server.listen(port, () => {
       logger.server(`HTTP server listening on port ${port}`);

@@ -1,11 +1,11 @@
 name: Publish Docker Image
 
-run-name: "Publish Docker ${{ inputs.release_version || github.ref_name }}"
+run-name: 'Publish Docker ${{ inputs.release_version || github.ref_name }}'
 
 on:
   push:
     tags:
-      - "v*"
+      - 'v*'
   workflow_call:
     inputs:
       release_version:

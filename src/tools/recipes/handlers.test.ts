@@ -5,14 +5,14 @@ import { RecipeToolHandlers } from './handlers.js';
 vi.mock('../../api/client.js', () => ({
   default: {
     request: vi.fn(),
-    get: vi.fn()
+    get: vi.fn(),
   },
   ApiError: class ApiError extends Error {
     constructor(message: string) {
       super(message);
       this.name = 'ApiError';
     }
-  }
+  },
 }));
 
 // Mock config
@@ -20,14 +20,17 @@ vi.mock('../../config/index.js', () => ({
   config: {
     parseToolConfiguration: vi.fn(() => ({
       toolSubConfigs: new Map([
-        ['recipes_cooking_complete', new Map([
-          ['allow_meal_plan_entry_already_done', false],
-          ['print_labels', true],
-          ['allow_no_meal_plan', false]
-        ])]
-      ])
-    }))
-  }
+        [
+          'recipes_cooking_complete',
+          new Map([
+            ['allow_meal_plan_entry_already_done', false],
+            ['print_labels', true],
+            ['allow_no_meal_plan', false],
+          ]),
+        ],
+      ]),
+    })),
+  },
 }));
 
 import apiClient from '../../api/client.js';
@@ -49,12 +52,12 @@ describe('RecipeToolHandlers', () => {
     it('should get recipes with specified fields', async () => {
       const mockRecipes = [
         { id: 1, name: 'Test Recipe 1', description: 'Test description 1' },
-        { id: 2, name: 'Test Recipe 2', description: 'Test description 2' }
+        { id: 2, name: 'Test Recipe 2', description: 'Test description 2' },
       ];
       mockApiClient.request.mockResolvedValue({
         data: mockRecipes,
         status: 200,
-        headers: {}
+        headers: {},
       });
 
       const result = await handlers.getRecipes({ fields: ['id', 'name'] });
@@ -62,7 +65,7 @@ describe('RecipeToolHandlers', () => {
       expect(mockApiClient.request).toHaveBeenCalledWith('/objects/recipes', {
         method: 'GET',
         body: undefined,
-        queryParams: { 'query[]': 'type=normal' }
+        queryParams: { 'query[]': 'type=normal' },
       });
       expect(result.isError).toBeUndefined();
       expect(result.content[0].type).toBe('text');
@@ -70,7 +73,7 @@ describe('RecipeToolHandlers', () => {
 
     it('should require fields parameter', async () => {
       const result = await handlers.getRecipes({});
-      
+
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain('Missing required parameters: fields');
     });
@@ -79,7 +82,7 @@ describe('RecipeToolHandlers', () => {
       mockApiClient.request.mockResolvedValue({
         data: null,
         status: 200,
-        headers: {}
+        headers: {},
       });
 
       const result = await handlers.getRecipes({ fields: ['id', 'name'] });
@@ -94,7 +97,7 @@ describe('RecipeToolHandlers', () => {
       mockApiClient.request.mockResolvedValue({
         data: mockRecipe,
         status: 200,
-        headers: {}
+        headers: {},
       });
 
       const result = await handlers.getRecipeById({ recipeId: 1 });
@@ -102,14 +105,14 @@ describe('RecipeToolHandlers', () => {
       expect(mockApiClient.request).toHaveBeenCalledWith('/objects/recipes/1', {
         method: 'GET',
         body: undefined,
-        queryParams: {}
+        queryParams: {},
       });
       expect(result.isError).toBeUndefined();
     });
 
     it('should require recipeId parameter', async () => {
       const result = await handlers.getRecipeById({});
-      
+
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain('Missing required parameters: recipeId');
     });
@@ -121,14 +124,14 @@ describe('RecipeToolHandlers', () => {
       mockApiClient.request.mockResolvedValue({
         data: mockResponse,
         status: 201,
-        headers: {}
+        headers: {},
       });
 
       const result = await handlers.createRecipe({
         name: 'New Recipe',
         description: 'A test recipe',
         baseServings: 4,
-        instructions: 'Mix and cook'
+        instructions: 'Mix and cook',
       });
 
       expect(mockApiClient.request).toHaveBeenCalledWith('/objects/recipes', {
@@ -138,9 +141,9 @@ describe('RecipeToolHandlers', () => {
           description: 'A test recipe',
           base_servings: 4,
           type: 'normal',
-          instructions: 'Mix and cook'
+          instructions: 'Mix and cook',
         },
-        queryParams: {}
+        queryParams: {},
       });
       expect(result.isError).toBeUndefined();
       expect(result.content[0].text).toContain('Recipe "New Recipe" created successfully');
@@ -148,7 +151,7 @@ describe('RecipeToolHandlers', () => {
 
     it('should require name parameter', async () => {
       const result = await handlers.createRecipe({});
-      
+
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain('Missing required parameters: name');
     });
@@ -158,7 +161,7 @@ describe('RecipeToolHandlers', () => {
       mockApiClient.request.mockResolvedValue({
         data: mockResponse,
         status: 201,
-        headers: {}
+        headers: {},
       });
 
       const result = await handlers.createRecipe({ name: 'Simple Recipe' });
@@ -170,9 +173,9 @@ describe('RecipeToolHandlers', () => {
           description: '',
           base_servings: 1,
           type: 'normal',
-          instructions: ''
+          instructions: '',
         },
-        queryParams: {}
+        queryParams: {},
       });
       expect(result.isError).toBeUndefined();
     });
@@ -184,7 +187,7 @@ describe('RecipeToolHandlers', () => {
       mockApiClient.request.mockResolvedValue({
         data: mockFulfillment,
         status: 200,
-        headers: {}
+        headers: {},
       });
 
       const result = await handlers.getRecipeFulfillment({ recipeId: 1 });
@@ -192,14 +195,14 @@ describe('RecipeToolHandlers', () => {
       expect(mockApiClient.request).toHaveBeenCalledWith('/recipes/1/fulfillment', {
         method: 'GET',
         body: undefined,
-        queryParams: {}
+        queryParams: {},
       });
       expect(result.isError).toBeUndefined();
     });
 
     it('should require recipeId parameter', async () => {
       const result = await handlers.getRecipeFulfillment({});
-      
+
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain('Missing required parameters: recipeId');
     });
@@ -209,12 +212,12 @@ describe('RecipeToolHandlers', () => {
     it('should get all recipe fulfillment', async () => {
       const mockFulfillment = [
         { recipe_id: 1, need_fulfilled: true },
-        { recipe_id: 2, need_fulfilled: false }
+        { recipe_id: 2, need_fulfilled: false },
       ];
       mockApiClient.request.mockResolvedValue({
         data: mockFulfillment,
         status: 200,
-        headers: {}
+        headers: {},
       });
 
       const result = await handlers.getAllRecipeFulfillment();
@@ -222,7 +225,7 @@ describe('RecipeToolHandlers', () => {
       expect(mockApiClient.request).toHaveBeenCalledWith('/recipes/fulfillment', {
         method: 'GET',
         body: undefined,
-        queryParams: {}
+        queryParams: {},
       });
       expect(result.isError).toBeUndefined();
     });
@@ -234,7 +237,7 @@ describe('RecipeToolHandlers', () => {
       mockApiClient.request.mockResolvedValue({
         data: mockResponse,
         status: 200,
-        headers: {}
+        headers: {},
       });
 
       const result = await handlers.consumeRecipe({ recipeId: 1 });
@@ -243,9 +246,9 @@ describe('RecipeToolHandlers', () => {
         method: 'POST',
         body: {
           recipe_id: 1,
-          servings: 1
+          servings: 1,
         },
-        queryParams: {}
+        queryParams: {},
       });
       expect(result.isError).toBeUndefined();
       expect(result.content[0].text).toContain('Recipe consumed (1 servings)');
@@ -256,7 +259,7 @@ describe('RecipeToolHandlers', () => {
       mockApiClient.request.mockResolvedValue({
         data: mockResponse,
         status: 200,
-        headers: {}
+        headers: {},
       });
 
       const result = await handlers.consumeRecipe({ recipeId: 1, servings: 4 });
@@ -265,9 +268,9 @@ describe('RecipeToolHandlers', () => {
         method: 'POST',
         body: {
           recipe_id: 1,
-          servings: 4
+          servings: 4,
         },
-        queryParams: {}
+        queryParams: {},
       });
       expect(result.isError).toBeUndefined();
       expect(result.content[0].text).toContain('Recipe consumed (4 servings)');
@@ -275,7 +278,7 @@ describe('RecipeToolHandlers', () => {
 
     it('should require recipeId parameter', async () => {
       const result = await handlers.consumeRecipe({});
-      
+
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain('Missing required parameters: recipeId');
     });
@@ -287,23 +290,26 @@ describe('RecipeToolHandlers', () => {
       mockApiClient.request.mockResolvedValue({
         data: mockResponse,
         status: 200,
-        headers: {}
+        headers: {},
       });
 
       const result = await handlers.addAllProductsToShopping({ recipeId: 1 });
 
-      expect(mockApiClient.request).toHaveBeenCalledWith('/recipes/1/add-all-ingredients-to-shopping-list', {
-        method: 'POST',
-        body: undefined,
-        queryParams: {}
-      });
+      expect(mockApiClient.request).toHaveBeenCalledWith(
+        '/recipes/1/add-all-ingredients-to-shopping-list',
+        {
+          method: 'POST',
+          body: undefined,
+          queryParams: {},
+        },
+      );
       expect(result.isError).toBeUndefined();
       expect(result.content[0].text).toContain('All recipe products added to shopping list');
     });
 
     it('should require recipeId parameter', async () => {
       const result = await handlers.addAllProductsToShopping({});
-      
+
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain('Missing required parameters: recipeId');
     });
@@ -315,23 +321,26 @@ describe('RecipeToolHandlers', () => {
       mockApiClient.request.mockResolvedValue({
         data: mockResponse,
         status: 200,
-        headers: {}
+        headers: {},
       });
 
       const result = await handlers.addMissingProductsToShopping({ recipeId: 1 });
 
-      expect(mockApiClient.request).toHaveBeenCalledWith('/recipes/1/add-not-fulfilled-products-to-shopping-list', {
-        method: 'POST',
-        body: undefined,
-        queryParams: {}
-      });
+      expect(mockApiClient.request).toHaveBeenCalledWith(
+        '/recipes/1/add-not-fulfilled-products-to-shopping-list',
+        {
+          method: 'POST',
+          body: undefined,
+          queryParams: {},
+        },
+      );
       expect(result.isError).toBeUndefined();
       expect(result.content[0].text).toContain('Missing recipe products added to shopping list');
     });
 
     it('should require recipeId parameter', async () => {
       const result = await handlers.addMissingProductsToShopping({});
-      
+
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain('Missing required parameters: recipeId');
     });
@@ -343,13 +352,13 @@ describe('RecipeToolHandlers', () => {
       mockApiClient.request.mockResolvedValue({
         data: mockResponse,
         status: 201,
-        headers: {}
+        headers: {},
       });
 
       const result = await handlers.addRecipeToMealPlan({
         recipeId: 1,
         day: '2024-01-15',
-        mealType: 'dinner'
+        mealType: 'dinner',
       });
 
       expect(mockApiClient.request).toHaveBeenCalledWith('/objects/meal_plan', {
@@ -357,9 +366,9 @@ describe('RecipeToolHandlers', () => {
         body: {
           day: '2024-01-15',
           type: 'dinner',
-          recipe_id: 1
+          recipe_id: 1,
         },
-        queryParams: {}
+        queryParams: {},
       });
       expect(result.isError).toBeUndefined();
       expect(result.content[0].text).toContain('Recipe added to meal plan successfully');
@@ -367,7 +376,7 @@ describe('RecipeToolHandlers', () => {
 
     it('should require recipeId and day parameters', async () => {
       const result = await handlers.addRecipeToMealPlan({});
-      
+
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain('Missing required parameters: recipeId, day');
     });
@@ -377,12 +386,12 @@ describe('RecipeToolHandlers', () => {
       mockApiClient.request.mockResolvedValue({
         data: mockResponse,
         status: 201,
-        headers: {}
+        headers: {},
       });
 
       const result = await handlers.addRecipeToMealPlan({
         recipeId: 1,
-        day: '2024-01-15'
+        day: '2024-01-15',
       });
 
       expect(mockApiClient.request).toHaveBeenCalledWith('/objects/meal_plan', {
@@ -390,9 +399,9 @@ describe('RecipeToolHandlers', () => {
         body: {
           day: '2024-01-15',
           type: 'lunch',
-          recipe_id: 1
+          recipe_id: 1,
         },
-        queryParams: {}
+        queryParams: {},
       });
       expect(result.isError).toBeUndefined();
     });
@@ -401,14 +410,14 @@ describe('RecipeToolHandlers', () => {
   describe('getMealPlan', () => {
     it('should require date parameter', async () => {
       const result = await handlers.getMealPlan({});
-      
+
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain('Missing required parameters: date');
     });
 
     it('should validate date format', async () => {
       const result = await handlers.getMealPlan({ date: 'invalid-date' });
-      
+
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain('Invalid date format. Use YYYY-MM-DD.');
     });
@@ -418,7 +427,7 @@ describe('RecipeToolHandlers', () => {
       mockApiClient.request.mockResolvedValue({
         data: [],
         status: 200,
-        headers: {}
+        headers: {},
       });
 
       const result = await handlers.getMealPlan({ date: '2024-01-15' });
@@ -426,7 +435,7 @@ describe('RecipeToolHandlers', () => {
       expect(result.isError).toBeUndefined();
       expect(JSON.parse(result.content[1].text)).toEqual({
         message: 'No meals planned for the requested date',
-        meal_plan_by_date: {}
+        meal_plan_by_date: {},
       });
     });
 
@@ -438,26 +447,19 @@ describe('RecipeToolHandlers', () => {
         day: '2024-01-15',
         recipe_servings: 2,
         note: null,
-        done: 0
+        done: 0,
       };
 
       const mockRecipe = {
         id: 73,
         name: 'Test Recipe',
         product_id: 438,
-        userfields: null
-      };
-
-      const mockSection = {
-        id: 2,
-        name: 'Dinner',
-        time_info: '18:00',
-        userfields: null
+        userfields: null,
       };
 
       const mockAllSections = [
         { id: 1, name: 'Breakfast', sort_number: 1, time_info: '08:00' },
-        { id: 2, name: 'Dinner', sort_number: 2, time_info: '18:00' }
+        { id: 2, name: 'Dinner', sort_number: 2, time_info: '18:00' },
       ];
 
       // Mock the multiple API calls
@@ -471,29 +473,33 @@ describe('RecipeToolHandlers', () => {
       const result = await handlers.getMealPlan({ date: '2024-01-15' });
 
       expect(result.isError).toBeUndefined();
-      
+
       const response = JSON.parse(result.content[1].text);
       expect(response).toEqual({
         meal_plan_by_date: {
-          '2024-01-15': [{
-            id: 1,
-            day: '2024-01-15',
-            section_id: 2,
-            recipe_id: 73,
-            recipe_servings: 2,
-            note: null,
-            done: 0
-          }]
+          '2024-01-15': [
+            {
+              id: 1,
+              day: '2024-01-15',
+              section_id: 2,
+              recipe_id: 73,
+              recipe_servings: 2,
+              note: null,
+              done: 0,
+            },
+          ],
         },
-        recipes: [{
-          id: 73,
-          name: 'Test Recipe',
-          product_id: 438
-        }],
+        recipes: [
+          {
+            id: 73,
+            name: 'Test Recipe',
+            product_id: 438,
+          },
+        ],
         sections: [
           { id: 1, name: 'Breakfast', time_info: '08:00' },
-          { id: 2, name: 'Dinner', time_info: '18:00' }
-        ]
+          { id: 2, name: 'Dinner', time_info: '18:00' },
+        ],
       });
 
       // Verify correct API calls were made
@@ -502,24 +508,24 @@ describe('RecipeToolHandlers', () => {
         body: undefined,
         queryParams: {
           'query[]': 'day=2024-01-14',
-          order: 'day'
-        }
+          order: 'day',
+        },
       });
       expect(mockApiClient.request).toHaveBeenCalledWith('/objects/meal_plan', {
         method: 'GET',
         body: undefined,
         queryParams: {
           'query[]': 'day=2024-01-15',
-          order: 'day'
-        }
+          order: 'day',
+        },
       });
       expect(mockApiClient.request).toHaveBeenCalledWith('/objects/meal_plan', {
         method: 'GET',
         body: undefined,
         queryParams: {
           'query[]': 'day=2024-01-16',
-          order: 'day'
-        }
+          order: 'day',
+        },
       });
     });
 
@@ -531,7 +537,7 @@ describe('RecipeToolHandlers', () => {
         day: '2024-01-19',
         recipe_servings: 2,
         note: null,
-        done: 0
+        done: 0,
       };
 
       // Mock empty responses for most days, one entry on target day
@@ -546,13 +552,17 @@ describe('RecipeToolHandlers', () => {
         .mockResolvedValueOnce({ data: [], status: 200, headers: {} }) // Saturday
         .mockResolvedValueOnce({ data: [], status: 200, headers: {} }) // Sunday
         .mockResolvedValueOnce({ data: [], status: 200, headers: {} }) // buffer day after
-        .mockResolvedValueOnce({ data: { id: 73, name: 'Recipe', product_id: null }, status: 200, headers: {} }) // recipe
+        .mockResolvedValueOnce({
+          data: { id: 73, name: 'Recipe', product_id: null },
+          status: 200,
+          headers: {},
+        }) // recipe
         .mockResolvedValueOnce({ data: [], status: 200, headers: {} }); // all sections
 
       const result = await handlers.getMealPlan({ date: '2024-01-19', weekly: true }); // Friday
 
       expect(result.isError).toBeUndefined();
-      
+
       const response = JSON.parse(result.content[1].text);
       expect(response.meal_plan_by_date['2024-01-19']).toBeDefined();
       expect(response.meal_plan_by_date['2024-01-19'][0].id).toBe(1);
@@ -576,12 +586,12 @@ describe('RecipeToolHandlers', () => {
       const mockSections = [
         { id: 1, name: 'Breakfast' },
         { id: 2, name: 'Lunch' },
-        { id: 3, name: 'Dinner' }
+        { id: 3, name: 'Dinner' },
       ];
       mockApiClient.request.mockResolvedValue({
         data: mockSections,
         status: 200,
-        headers: {}
+        headers: {},
       });
 
       const result = await handlers.getMealPlanSections();
@@ -589,7 +599,7 @@ describe('RecipeToolHandlers', () => {
       expect(mockApiClient.request).toHaveBeenCalledWith('/objects/meal_plan_sections', {
         method: 'GET',
         body: undefined,
-        queryParams: {}
+        queryParams: {},
       });
       expect(result.isError).toBeUndefined();
     });
@@ -601,7 +611,7 @@ describe('RecipeToolHandlers', () => {
       mockApiClient.request.mockResolvedValue({
         data: mockResponse,
         status: 200,
-        headers: {}
+        headers: {},
       });
 
       const result = await handlers.deleteRecipeFromMealPlan({ mealPlanEntryId: 1 });
@@ -609,7 +619,7 @@ describe('RecipeToolHandlers', () => {
       expect(mockApiClient.request).toHaveBeenCalledWith('/objects/meal_plan/1', {
         method: 'DELETE',
         body: undefined,
-        queryParams: {}
+        queryParams: {},
       });
       expect(result.isError).toBeUndefined();
       expect(result.content[0].text).toContain('Recipe deleted from meal plan successfully');
@@ -617,7 +627,7 @@ describe('RecipeToolHandlers', () => {
 
     it('should require mealPlanEntryId parameter', async () => {
       const result = await handlers.deleteRecipeFromMealPlan({});
-      
+
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain('Missing required parameters: mealPlanEntryId');
     });
@@ -628,12 +638,12 @@ describe('RecipeToolHandlers', () => {
       const mockRecipes = [
         { id: 1, name: 'Pasta Recipe', description: 'Delicious pasta' },
         { id: 2, name: 'Pizza Recipe', description: 'Tasty pizza' },
-        { id: 3, name: 'Salad Recipe', description: 'Fresh salad' }
+        { id: 3, name: 'Salad Recipe', description: 'Fresh salad' },
       ];
       mockApiClient.request.mockResolvedValue({
         data: mockRecipes,
         status: 200,
-        headers: {}
+        headers: {},
       });
 
       const result = await handlers.searchRecipes({ query: 'pasta' });
@@ -641,14 +651,14 @@ describe('RecipeToolHandlers', () => {
       expect(mockApiClient.request).toHaveBeenCalledWith('/objects/recipes', {
         method: 'GET',
         body: undefined,
-        queryParams: { 'query[]': 'type=normal' }
+        queryParams: { 'query[]': 'type=normal' },
       });
       expect(result.isError).toBeUndefined();
     });
 
     it('should require query parameter', async () => {
       const result = await handlers.searchRecipes({});
-      
+
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain('Missing required parameters: query');
     });
@@ -660,7 +670,7 @@ describe('RecipeToolHandlers', () => {
       mockApiClient.request.mockResolvedValue({
         data: mockNutrition,
         status: 200,
-        headers: {}
+        headers: {},
       });
 
       const result = await handlers.getRecipeNutrition({ recipeId: 1 });
@@ -668,14 +678,14 @@ describe('RecipeToolHandlers', () => {
       expect(mockApiClient.request).toHaveBeenCalledWith('/recipes/1/nutrition', {
         method: 'GET',
         body: undefined,
-        queryParams: {}
+        queryParams: {},
       });
       expect(result.isError).toBeUndefined();
     });
 
     it('should require recipeId parameter', async () => {
       const result = await handlers.getRecipeNutrition({});
-      
+
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain('Missing required parameters: recipeId');
     });
@@ -697,7 +707,7 @@ describe('RecipeToolHandlers', () => {
       expect(mockApiClient.request).toHaveBeenCalledWith('/recipes/1/printlabel', {
         method: 'GET',
         body: undefined,
-        queryParams: {}
+        queryParams: {},
       });
       expect(result.isError).toBeFalsy();
     });

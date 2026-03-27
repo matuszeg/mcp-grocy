@@ -29,11 +29,13 @@ esbuild allows any websites to send any request to the development server and re
 **Details:**  
 esbuild sets `Access-Control-Allow-Origin: *` header to all requests, including the SSE connection, which allows any websites to send any request to the development server and read the response.
 
-**Mitigation:**  
+**Mitigation:**
+
 1. The project now explicitly requires esbuild v0.25.0 or later
 2. If you're running a forked version, check for esbuild in your dependency tree: `npm ls esbuild`
 3. When using development servers, avoid exposing them to public networks
 
 **References:**
+
 - https://github.com/evanw/esbuild/blob/df815ac27b84f8b34374c9182a93c94718f8a630/pkg/api/serve_other.go#L121
 - https://github.com/evanw/esbuild/blob/df815ac27b84f8b34374c9182a93c94718f8a630/pkg/api/serve_other.go#L363

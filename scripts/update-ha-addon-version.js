@@ -2,11 +2,11 @@
 
 /**
  * Update version in config.yaml for Home Assistant addon compatibility
- * 
+ *
  * Home Assistant addons REQUIRE a version field in config.yaml that matches
  * the Docker image tag. Semantic-release updates package.json automatically,
  * but we need to manually sync config.yaml to maintain addon compatibility.
- * 
+ *
  * See: https://developers.home-assistant.io/docs/add-ons/configuration/
  */
 
@@ -23,12 +23,12 @@ try {
   const configPath = 'config.yaml';
   const configContent = readFileSync(configPath, 'utf8');
   const config = parse(configContent);
-  
+
   config.version = version;
-  
+
   const updatedContent = stringify(config);
   writeFileSync(configPath, updatedContent);
-  
+
   console.log(`Updated config.yaml with version ${version}`);
 } catch (error) {
   console.error('Error updating config.yaml:', error.message);

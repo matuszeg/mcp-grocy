@@ -14,7 +14,11 @@ export class ValidationHelpers {
     }
   }
 
-  static validateNumber(value: any, fieldName: string, options?: { min?: number; max?: number }): void {
+  static validateNumber(
+    value: any,
+    fieldName: string,
+    options?: { min?: number; max?: number },
+  ): void {
     if (value !== undefined) {
       if (typeof value !== 'number') {
         throw new Error(`${fieldName} must be a number`);
@@ -28,11 +32,19 @@ export class ValidationHelpers {
     }
   }
 
-  static validateKnownOptions(subConfigs: Map<string, any>, knownOptions: Set<string>, toolName: string): void {
+  static validateKnownOptions(
+    subConfigs: Map<string, any>,
+    knownOptions: Set<string>,
+    toolName: string,
+  ): void {
     for (const [key] of subConfigs) {
       if (!knownOptions.has(key)) {
-        const validOptions = Array.from(knownOptions).filter(k => k !== 'ack_token').join(', ');
-        throw new Error(`Unknown sub-configuration option '${key}' for ${toolName} tool. Valid options are: ${validOptions}`);
+        const validOptions = Array.from(knownOptions)
+          .filter((k) => k !== 'ack_token')
+          .join(', ');
+        throw new Error(
+          `Unknown sub-configuration option '${key}' for ${toolName} tool. Valid options are: ${validOptions}`,
+        );
       }
     }
   }

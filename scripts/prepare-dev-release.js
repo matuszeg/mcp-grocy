@@ -4,10 +4,10 @@
  * This script prepares the dev release by ensuring proper versioning.
  * It reads the version from the package.json in the main branch and
  * ensures the next dev version is properly incremented from there.
- * 
+ *
  * Usage:
  *   node prepare-dev-release.js [options]
- * 
+ *
  * Options:
  *   --force          Force update even if not on dev branch
  *   --dry-run        Show what would be done without making changes
@@ -31,18 +31,18 @@ const options = {
   dryRun: args.includes('--dry-run'),
   patch: args.includes('--patch'),
   minor: args.includes('--minor'),
-  major: args.includes('--major')
+  major: args.includes('--major'),
 };
 
 async function prepareDevRelease() {
   try {
     console.log('Preparing dev release with proper versioning...');
     console.log('Options:', options);
-    
+
     // Get current branch
     const currentBranch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
     console.log(`Current branch: ${currentBranch}`);
-    
+
     if (currentBranch !== 'dev' && !options.force) {
       console.log('Not on dev branch, use --force to override.');
       process.exit(0);
@@ -50,34 +50,34 @@ async function prepareDevRelease() {
 
     // Fetch latest version from the main branch
     console.log('Fetching latest version from main branch...');
-    
+
     // Ensure we have the latest main branch data
     execSync('git fetch origin main --tags');
-    
+
     // Get the latest main branch version from package.json
     const mainPackageJson = execSync('git show origin/main:package.json').toString();
     const mainVersion = JSON.parse(mainPackageJson).version;
     console.log(`Latest main branch version: ${mainVersion}`);
-    
+
     // Read the current package.json
     const packageJsonContent = fs.readFileSync(packageJsonPath, 'utf8');
     const packageJson = JSON.parse(packageJsonContent);
-    
+
     // Get current version
     const currentVersion = packageJson.version;
     console.log(`Current version in package.json: ${currentVersion}`);
-    
+
     // Determine if and how we should update the version
     let shouldUpdate = false;
     let newVersion;
-    
+
     // Check if current version is already a dev version
     const isDevVersion = currentVersion.includes('-dev');
-    
+
     // Split the version into parts
     let versionParts;
     let devNumber = 1;
-    
+
     if (isDevVersion) {
       // Extract base version and dev number
       const [baseVersion, devPart] = currentVersion.split('-dev.');
@@ -86,9 +86,9 @@ async function prepareDevRelease() {
     } else {
       versionParts = currentVersion.split('.');
     }
-    
+
     const [major, minor, patch] = versionParts;
-    
+
     if (options.major) {
       // Major version increment
       newVersion = `${parseInt(major) + 1}.0.0-dev.1`;
@@ -111,16 +111,16 @@ async function prepareDevRelease() {
       newVersion = `${major}.${minor}.${parseInt(patch) + 1}-dev.1`;
       shouldUpdate = true;
     }
-    
+
     if (shouldUpdate) {
       console.log(`Updating version in package.json from ${currentVersion} to ${newVersion}`);
-      
+
       if (!options.dryRun) {
         // Update package.json
         packageJson.version = newVersion;
         fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
         console.log(`Updated package.json version to ${newVersion}`);
-        
+
         // Also update the version in config.yaml if it exists
         const configYamlPath = path.join(process.cwd(), 'config.yaml');
         if (fs.existsSync(configYamlPath)) {
@@ -136,9 +136,11 @@ async function prepareDevRelease() {
     } else if (currentVersion.includes('-dev')) {
       console.log(`Package.json already has a dev version (${currentVersion}), no update needed.`);
     } else {
-      console.log(`Version update not needed. Use --patch, --minor, or --major to force an update.`);
+      console.log(
+        `Version update not needed. Use --patch, --minor, or --major to force an update.`,
+      );
     }
-    
+
     console.log('Dev release preparation complete.');
   } catch (error) {
     console.error('Error in prepareDevRelease:', error);

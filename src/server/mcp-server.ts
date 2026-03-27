@@ -4,7 +4,12 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { CallToolResult, ErrorCode, McpError, type ServerCapabilities } from '@modelcontextprotocol/sdk/types.js';
+import {
+  CallToolResult,
+  ErrorCode,
+  McpError,
+  type ServerCapabilities,
+} from '@modelcontextprotocol/sdk/types.js';
 import { VERSION, PACKAGE_NAME, SERVER_NAME as RESOURCE_URI_SCHEME } from '../version.js';
 import { createToolRegistry } from '../tools/index.js';
 import type { ToolRegistry } from '../tools/types.js';
@@ -18,7 +23,7 @@ import { ErrorHandler } from '../utils/errors.js';
 const GROCY_SERVER_CAPABILITIES: ServerCapabilities = {
   tools: {},
   resources: {},
-  prompts: {}
+  prompts: {},
 };
 
 const SERVER_INFO = {
@@ -26,7 +31,7 @@ const SERVER_INFO = {
   version: VERSION,
   websiteUrl: 'https://github.com/miguelangel-nubla/mcp-grocy',
   description:
-    'MCP server for Grocy. Documentation: https://github.com/miguelangel-nubla/mcp-grocy/blob/main/README.md'
+    'MCP server for Grocy. Documentation: https://github.com/miguelangel-nubla/mcp-grocy/blob/main/README.md',
 };
 
 export class GrocyMcpServer {
@@ -42,7 +47,7 @@ export class GrocyMcpServer {
   private constructor(
     mcp: McpServer,
     toolRegistry: ToolRegistry,
-    resourceHandler: ResourceHandler
+    resourceHandler: ResourceHandler,
   ) {
     this.mcp = mcp;
     this.toolRegistry = toolRegistry;
@@ -55,11 +60,11 @@ export class GrocyMcpServer {
   static async create(): Promise<GrocyMcpServer> {
     const [toolRegistry, resourceHandler] = await Promise.all([
       createToolRegistry(),
-      Promise.resolve(new ResourceHandler())
+      Promise.resolve(new ResourceHandler()),
     ]);
 
     const mcp = new McpServer(SERVER_INFO, {
-      capabilities: GROCY_SERVER_CAPABILITIES
+      capabilities: GROCY_SERVER_CAPABILITIES,
     });
 
     return new GrocyMcpServer(mcp, toolRegistry, resourceHandler);
@@ -92,7 +97,7 @@ export class GrocyMcpServer {
       const registered = mcp.registerTool(
         def.name,
         { description: def.description, inputSchema },
-        async (args) => this.invokeTool(def.name, args as Record<string, unknown>)
+        async (args) => this.invokeTool(def.name, args as Record<string, unknown>),
       );
       if (!this.enabledTools.has(def.name)) {
         registered.disable();
@@ -105,23 +110,23 @@ export class GrocyMcpServer {
         entry.name,
         uri,
         { description: entry.description, mimeType: entry.mimeType },
-        async (resourceUrl) => this.resourceHandler.readResource(resourceUrl.toString())
+        async (resourceUrl) => this.resourceHandler.readResource(resourceUrl.toString()),
       );
     }
 
     logger.config(
-      `Registered ${this.toolRegistry.getDefinitions().length} tool(s) (${this.enabledTools.size} enabled) and ${STATIC_MCP_RESOURCE_ENTRIES.length} resource(s) via McpServer`
+      `Registered ${this.toolRegistry.getDefinitions().length} tool(s) (${this.enabledTools.size} enabled) and ${STATIC_MCP_RESOURCE_ENTRIES.length} resource(s) via McpServer`,
     );
   }
 
   private async invokeTool(
     toolName: string,
-    args: Record<string, unknown>
+    args: Record<string, unknown>,
   ): Promise<CallToolResult> {
     if (!this.enabledTools.has(toolName)) {
       throw new McpError(
         ErrorCode.InvalidRequest,
-        `Tool '${toolName}' is not enabled. Enable it in your configuration.`
+        `Tool '${toolName}' is not enabled. Enable it in your configuration.`,
       );
     }
 
@@ -139,7 +144,7 @@ export class GrocyMcpServer {
         if (ackToken) {
           result.content.unshift({
             type: 'text' as const,
-            text: `Acknowledgment token: ${ackToken}`
+            text: `Acknowledgment token: ${ackToken}`,
           });
         }
       }
@@ -169,7 +174,7 @@ export class GrocyMcpServer {
 
   public createMcpServer(): McpServer {
     const mcp = new McpServer(SERVER_INFO, {
-      capabilities: GROCY_SERVER_CAPABILITIES
+      capabilities: GROCY_SERVER_CAPABILITIES,
     });
     this.registerToolsAndResources(mcp);
     this.setupErrorHandling(mcp);
@@ -178,13 +183,12 @@ export class GrocyMcpServer {
 
   public async start(): Promise<void> {
     const httpTransportOnly =
-      process.env.MCP_HTTP_TRANSPORT_ONLY === 'true' ||
-      process.env.MCP_HTTP_TRANSPORT_ONLY === '1';
+      process.env.MCP_HTTP_TRANSPORT_ONLY === 'true' || process.env.MCP_HTTP_TRANSPORT_ONLY === '1';
 
     if (httpTransportOnly && !config.server.enable_http_server) {
       logger.error(
         'MCP_HTTP_TRANSPORT_ONLY is set but HTTP server is disabled; enable server.enable_http_server or ENABLE_HTTP_SERVER',
-        'SERVER'
+        'SERVER',
       );
       process.exit(1);
     }
@@ -204,8 +208,8 @@ export class GrocyMcpServer {
         await startHttpServer(serverFactory, config.server.http_server_port, {
           corsOrigin: config.server.http_cors_origin,
           ...(config.server.http_access_token !== undefined && {
-            accessToken: config.server.http_access_token
-          })
+            accessToken: config.server.http_access_token,
+          }),
         });
       } catch (error) {
         logger.error('Failed to start HTTP server', 'SERVER', { error });

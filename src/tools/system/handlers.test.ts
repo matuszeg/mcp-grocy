@@ -4,24 +4,24 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 vi.mock('../../api/client.js', () => ({
   default: {
     request: vi.fn(),
-    get: vi.fn()
+    get: vi.fn(),
   },
   ApiError: class ApiError extends Error {
     constructor(message: string) {
       super(message);
       this.name = 'ApiError';
     }
-  }
+  },
 }));
 
 // Mock config - create a real ConfigManager instance with test data
 vi.mock('../../config/index.js', async () => {
   const actual = await vi.importActual('../../config/index.js');
-  
-  // Create a ConfigManager instance for testing with mock data  
+
+  // Create a ConfigManager instance for testing with mock data
   const ConfigManagerClass = actual.ConfigManager as any;
   const testConfig = new ConfigManagerClass();
-  
+
   // Override the properties with test data - need to properly set the readonly properties
   Object.defineProperty(testConfig, 'grocy', {
     value: {
@@ -29,31 +29,31 @@ vi.mock('../../config/index.js', async () => {
       api_key: 'test-api-key',
       enable_ssl_verify: true,
       response_size_limit: 10000,
-      max_response_bytes: 52_428_800
+      max_response_bytes: 52_428_800,
     },
     writable: false,
-    configurable: true
+    configurable: true,
   });
-  
+
   Object.defineProperty(testConfig, 'server', {
     value: {
       enable_http_server: false,
       http_server_port: 8080,
-      http_cors_origin: '*'
+      http_cors_origin: '*',
     },
     writable: false,
-    configurable: true
+    configurable: true,
   });
-  
+
   Object.defineProperty(testConfig, 'tools', {
     value: {},
     writable: false,
-    configurable: true
+    configurable: true,
   });
-  
+
   return {
     ...actual,
-    config: testConfig
+    config: testConfig,
   };
 });
 
@@ -64,17 +64,15 @@ vi.mock('../../utils/logger.js', () => ({
     info: vi.fn(),
     warn: vi.fn(),
     debug: vi.fn(),
-    config: vi.fn()
-  }
+    config: vi.fn(),
+  },
 }));
 
 import { SystemToolHandlers } from './handlers.js';
 import apiClient from '../../api/client.js';
-import { config } from '../../config/index.js';
 import { logger } from '../../utils/logger.js';
 
 const mockApiClient = vi.mocked(apiClient);
-const mockConfig = vi.mocked(config);
 const mockLogger = vi.mocked(logger);
 
 describe('SystemToolHandlers', () => {
@@ -93,12 +91,12 @@ describe('SystemToolHandlers', () => {
     it('should get all locations', async () => {
       const mockLocations = [
         { id: 1, name: 'Kitchen', description: 'Main kitchen area' },
-        { id: 2, name: 'Pantry', description: 'Storage pantry' }
+        { id: 2, name: 'Pantry', description: 'Storage pantry' },
       ];
       mockApiClient.request.mockResolvedValue({
         data: mockLocations,
         status: 200,
-        headers: {}
+        headers: {},
       });
 
       const result = await handlers.getLocations();
@@ -106,7 +104,7 @@ describe('SystemToolHandlers', () => {
       expect(mockApiClient.request).toHaveBeenCalledWith('/objects/locations', {
         method: 'GET',
         body: undefined,
-        queryParams: {}
+        queryParams: {},
       });
       expect(result.isError).toBeUndefined();
     });
@@ -124,12 +122,12 @@ describe('SystemToolHandlers', () => {
     it('should get all quantity units', async () => {
       const mockUnits = [
         { id: 1, name: 'kg', name_plural: 'kg' },
-        { id: 2, name: 'liter', name_plural: 'liters' }
+        { id: 2, name: 'liter', name_plural: 'liters' },
       ];
       mockApiClient.request.mockResolvedValue({
         data: mockUnits,
         status: 200,
-        headers: {}
+        headers: {},
       });
 
       const result = await handlers.getQuantityUnits();
@@ -137,7 +135,7 @@ describe('SystemToolHandlers', () => {
       expect(mockApiClient.request).toHaveBeenCalledWith('/objects/quantity_units', {
         method: 'GET',
         body: undefined,
-        queryParams: {}
+        queryParams: {},
       });
       expect(result.isError).toBeUndefined();
     });
@@ -155,12 +153,12 @@ describe('SystemToolHandlers', () => {
     it('should get all users', async () => {
       const mockUsers = [
         { id: 1, username: 'admin', display_name: 'Administrator' },
-        { id: 2, username: 'user1', display_name: 'User One' }
+        { id: 2, username: 'user1', display_name: 'User One' },
       ];
       mockApiClient.request.mockResolvedValue({
         data: mockUsers,
         status: 200,
-        headers: {}
+        headers: {},
       });
 
       const result = await handlers.getUsers();
@@ -168,7 +166,7 @@ describe('SystemToolHandlers', () => {
       expect(mockApiClient.request).toHaveBeenCalledWith('/users', {
         method: 'GET',
         body: undefined,
-        queryParams: {}
+        queryParams: {},
       });
       expect(result.isError).toBeUndefined();
     });
@@ -188,16 +186,16 @@ describe('SystemToolHandlers', () => {
       mockApiClient.request.mockResolvedValue({
         data: mockResponse,
         status: 200,
-        headers: {}
+        headers: {},
       });
 
       const result = await handlers.callGrocyApi({
-        endpoint: 'test/endpoint'
+        endpoint: 'test/endpoint',
       });
 
       expect(mockApiClient.request).toHaveBeenCalledWith('/test/endpoint', {
         method: 'GET',
-        body: null
+        body: null,
       });
       expect(result.isError).toBeUndefined();
     });
@@ -205,22 +203,22 @@ describe('SystemToolHandlers', () => {
     it('should call Grocy API with POST request and body', async () => {
       const mockResponse = { data: 'created' };
       const requestBody = { name: 'test item' };
-      
+
       mockApiClient.request.mockResolvedValue({
         data: mockResponse,
         status: 201,
-        headers: {}
+        headers: {},
       });
 
       const result = await handlers.callGrocyApi({
         endpoint: 'objects/products',
         method: 'POST',
-        body: requestBody
+        body: requestBody,
       });
 
       expect(mockApiClient.request).toHaveBeenCalledWith('/objects/products', {
         method: 'POST',
-        body: requestBody
+        body: requestBody,
       });
       expect(result.isError).toBeUndefined();
     });
@@ -230,16 +228,16 @@ describe('SystemToolHandlers', () => {
       mockApiClient.request.mockResolvedValue({
         data: mockResponse,
         status: 200,
-        headers: {}
+        headers: {},
       });
 
       const result = await handlers.callGrocyApi({
-        endpoint: '/api/objects/products'
+        endpoint: '/api/objects/products',
       });
 
       expect(mockApiClient.request).toHaveBeenCalledWith('/objects/products', {
         method: 'GET',
-        body: null
+        body: null,
       });
       expect(result.isError).toBeUndefined();
     });
@@ -249,16 +247,16 @@ describe('SystemToolHandlers', () => {
       mockApiClient.request.mockResolvedValue({
         data: mockResponse,
         status: 200,
-        headers: {}
+        headers: {},
       });
 
       const result = await handlers.callGrocyApi({
-        endpoint: '/objects/products'
+        endpoint: '/objects/products',
       });
 
       expect(mockApiClient.request).toHaveBeenCalledWith('/objects/products', {
         method: 'GET',
-        body: null
+        body: null,
       });
       expect(result.isError).toBeUndefined();
     });
@@ -276,7 +274,7 @@ describe('SystemToolHandlers', () => {
       mockApiClient.request.mockRejectedValue(new Error('API Error'));
 
       const result = await handlers.callGrocyApi({
-        endpoint: 'test/endpoint'
+        endpoint: 'test/endpoint',
       });
 
       expect(result.isError).toBe(true);
@@ -296,39 +294,39 @@ describe('SystemToolHandlers', () => {
       mockApiClient.request.mockResolvedValue({
         data: mockResponse,
         status: 200,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       });
 
       const result = await handlers.testRequest({
         method: 'GET',
-        endpoint: 'objects/products'
+        endpoint: 'objects/products',
       });
 
       expect(mockApiClient.request).toHaveBeenCalledWith('/objects/products', {
         method: 'GET',
         body: undefined,
-        headers: { 'GROCY-API-KEY': 'test-api-key' }
+        headers: { 'GROCY-API-KEY': 'test-api-key' },
       });
       expect(result.isError).toBeUndefined();
-      
+
       const responseData = JSON.parse(result.content[1].text);
       expect(responseData).toMatchObject({
         request: {
           url: 'http://localhost:9283/objects/products',
           method: 'GET',
-          authMethod: 'apikey'
+          authMethod: 'apikey',
         },
         response: {
           statusCode: 200,
-          body: mockResponse
+          body: mockResponse,
         },
         validation: {
           isError: false,
-          messages: ['Request completed successfully']
-        }
+          messages: ['Request completed successfully'],
+        },
       });
       expect(responseData.request.headers['GROCY-API-KEY']).toBe('[REDACTED]');
-      
+
       // Check timing is reasonable (should be a number followed by 'ms')
       expect(responseData.response.timing).toMatch(/^\d+ms$/);
     });
@@ -338,12 +336,12 @@ describe('SystemToolHandlers', () => {
       mockApiClient.request.mockResolvedValue({
         data: oversizedBody,
         status: 200,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       });
 
       const result = await handlers.testRequest({
         method: 'GET',
-        endpoint: 'objects/products'
+        endpoint: 'objects/products',
       });
 
       expect(result.isError).toBeUndefined();
@@ -369,7 +367,7 @@ describe('SystemToolHandlers', () => {
 
       const result = await handlers.testRequest({
         method: 'GET',
-        endpoint: 'objects/products'
+        endpoint: 'objects/products',
       });
 
       expect(result.isError).toBe(true);

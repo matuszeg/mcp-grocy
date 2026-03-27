@@ -12,7 +12,7 @@ export class SystemToolHandlers extends BaseToolHandler {
       'grocy-api-key',
       'authorization',
       'x-api-key',
-      'proxy-authorization'
+      'proxy-authorization',
     ]);
 
     for (const key of Object.keys(redacted)) {
@@ -27,7 +27,10 @@ export class SystemToolHandlers extends BaseToolHandler {
   /**
    * Truncate a string to at most `maxBytes` UTF-8 bytes without splitting a codepoint.
    */
-  private truncateStringToUtf8Bytes(str: string, maxBytes: number): { text: string; byteLength: number } {
+  private truncateStringToUtf8Bytes(
+    str: string,
+    maxBytes: number,
+  ): { text: string; byteLength: number } {
     const buf = Buffer.from(str, 'utf8');
     if (buf.length <= maxBytes) {
       return { text: str, byteLength: buf.length };
@@ -68,7 +71,7 @@ export class SystemToolHandlers extends BaseToolHandler {
 
     const { text: truncatedJsonBody, byteLength: prefixBytes } = this.truncateStringToUtf8Bytes(
       jsonBody,
-      sizeLimit
+      sizeLimit,
     );
     const returnedSize = Buffer.byteLength(truncatedJsonBody, 'utf8');
 
@@ -78,8 +81,8 @@ export class SystemToolHandlers extends BaseToolHandler {
         originalSize,
         returnedSize,
         truncationPoint: prefixBytes,
-        sizeLimit
-      }
+        sizeLimit,
+      },
     };
   }
 
@@ -110,20 +113,20 @@ export class SystemToolHandlers extends BaseToolHandler {
 
   public callGrocyApi: ToolHandler = async (args: any): Promise<ToolResult> => {
     const { endpoint, method = 'GET', body = null } = args;
-    
+
     if (!endpoint) {
       throw new McpError(ErrorCode.InvalidParams, 'Missing required parameter: endpoint');
     }
 
     // Remove leading /api/ if present
     const cleanEndpoint = endpoint.replace(/^\/?(?:api\/)?/, '');
-    
+
     try {
       const response = await apiClient.request(`/${cleanEndpoint}`, {
         method,
-        body
+        body,
       });
-      
+
       return this.createSuccess(response.data);
     } catch (error: any) {
       logger.error(`Error calling Grocy API endpoint ${endpoint}`, 'api', { error });
@@ -133,7 +136,7 @@ export class SystemToolHandlers extends BaseToolHandler {
 
   public testRequest: ToolHandler = async (args: any): Promise<ToolResult> => {
     const { method, endpoint, body, headers = {} } = args;
-    
+
     if (!method || !endpoint) {
       throw new McpError(ErrorCode.InvalidParams, 'method and endpoint are required');
     }
@@ -141,38 +144,39 @@ export class SystemToolHandlers extends BaseToolHandler {
     const normalizedEndpoint = `/${endpoint.replace(/^\/+|\/+$/g, '')}`;
     const requestHeaders = { ...config.getCustomHeaders(), ...headers };
     const safeRequestHeaders = this.redactHeaders(requestHeaders);
-    
+
     try {
       const startTime = Date.now();
       const response = await apiClient.request(normalizedEndpoint, {
         method,
         body,
-        headers: requestHeaders
+        headers: requestHeaders,
       });
       const endTime = Date.now();
       const responseWithLimit = this.applyResponseSizeLimit(response.data);
-      
+
       const responseObj = {
         request: {
           url: `${config.grocy.base_url}${normalizedEndpoint}`,
           method,
           headers: safeRequestHeaders,
           body,
-          authMethod: config.grocy.api_key ? 'apikey' : 'none'
+          authMethod: config.grocy.api_key ? 'apikey' : 'none',
         },
         response: {
           statusCode: response.status,
           timing: `${endTime - startTime}ms`,
           headers: response.headers,
-          body: responseWithLimit.body
+          body: responseWithLimit.body,
         },
         validation: {
           isError: response.status >= 400,
-          messages: response.status >= 400 ? 
-            [`Request failed with status ${response.status}`] : 
-            ['Request completed successfully'],
-          ...(responseWithLimit.truncated ? { truncated: responseWithLimit.truncated } : {})
-        }
+          messages:
+            response.status >= 400
+              ? [`Request failed with status ${response.status}`]
+              : ['Request completed successfully'],
+          ...(responseWithLimit.truncated ? { truncated: responseWithLimit.truncated } : {}),
+        },
       };
 
       return this.createSuccess(responseObj);
@@ -182,8 +186,8 @@ export class SystemToolHandlers extends BaseToolHandler {
           url: `${config.grocy.base_url}${normalizedEndpoint}`,
           method,
           headers: safeRequestHeaders,
-          body
-        }
+          body,
+        },
       });
     }
   };

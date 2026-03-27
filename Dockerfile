@@ -1,5 +1,5 @@
-# Default base image for docker builds. For addons, this is overridden by build.yaml.
-ARG BUILD_FROM=alpine:3.21
+# Default: official Node 22 Alpine (exact runtime). Home Assistant addons override via build.yaml.
+ARG BUILD_FROM=node:22-alpine
 
 
 FROM $BUILD_FROM AS base
@@ -20,9 +20,9 @@ RUN if echo "$BUILD_FROM" | grep -q "home-assistant"; then \
     apk add --no-cache nodejs npm && \
     rm -rf /tmp/* /var/tmp/*; \
 else \
-    # Regular Alpine needs all dependencies
-    echo "Installing Node.js v${NODE_VERSION} for docker build..." && \
-    apk add --no-cache nodejs npm tini && \
+    echo "Docker build: ensuring Node + tini..." && \
+    ( command -v node >/dev/null 2>&1 || apk add --no-cache nodejs npm ) && \
+    apk add --no-cache tini && \
     rm -rf /tmp/* /var/tmp/*; \
 fi
 

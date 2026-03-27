@@ -5,18 +5,18 @@ vi.mock('axios', () => ({
   default: {
     create: vi.fn(() => ({
       request: vi.fn(),
-      defaults: { 
-        headers: { 
-          common: {} 
-        } 
+      defaults: {
+        headers: {
+          common: {},
+        },
       },
       interceptors: {
         request: { use: vi.fn() },
-        response: { use: vi.fn() }
-      }
+        response: { use: vi.fn() },
+      },
     })),
-    isAxiosError: vi.fn()
-  }
+    isAxiosError: vi.fn(),
+  },
 }));
 
 import axios from 'axios';
@@ -30,12 +30,12 @@ vi.mock('../src/config/index.js', () => ({
       api_key: 'test-api-key',
       enable_ssl_verify: true,
       response_size_limit: 10000,
-      max_response_bytes: 52_428_800
+      max_response_bytes: 52_428_800,
     },
     getCustomHeaders: () => ({
-      'GROCY-API-KEY': 'test-api-key'
-    })
-  }
+      'GROCY-API-KEY': 'test-api-key',
+    }),
+  },
 }));
 
 import { GrocyApiClient, ApiError } from '../src/api/client.js';
@@ -47,17 +47,17 @@ describe('GrocyApiClient', () => {
   beforeEach(() => {
     mockAxiosInstance = {
       request: vi.fn(),
-      defaults: { 
-        headers: { 
-          common: {} 
-        } 
+      defaults: {
+        headers: {
+          common: {},
+        },
       },
       interceptors: {
         request: { use: vi.fn() },
-        response: { use: vi.fn() }
-      }
+        response: { use: vi.fn() },
+      },
     };
-    
+
     vi.mocked(mockedAxios.create).mockReturnValue(mockAxiosInstance);
     client = new GrocyApiClient();
   });
@@ -73,7 +73,7 @@ describe('GrocyApiClient', () => {
         validateStatus: expect.any(Function),
         timeout: 30000,
         maxContentLength: 52_428_800,
-        httpsAgent: undefined
+        httpsAgent: undefined,
       });
     });
 
@@ -88,7 +88,7 @@ describe('GrocyApiClient', () => {
       const mockResponse = {
         data: { test: 'data' },
         status: 200,
-        headers: { 'content-type': 'application/json' }
+        headers: { 'content-type': 'application/json' },
       };
       mockAxiosInstance.request.mockResolvedValue(mockResponse);
 
@@ -98,16 +98,16 @@ describe('GrocyApiClient', () => {
         method: 'GET',
         url: '/api/test/endpoint',
         headers: {
-          'Accept': 'application/json',
+          Accept: 'application/json',
           'Content-Type': 'application/json',
-          'GROCY-API-KEY': 'test-api-key'
-        }
+          'GROCY-API-KEY': 'test-api-key',
+        },
       });
 
       expect(result).toEqual({
         data: { test: 'data' },
         status: 200,
-        headers: { 'content-type': 'application/json' }
+        headers: { 'content-type': 'application/json' },
       });
     });
 
@@ -117,22 +117,22 @@ describe('GrocyApiClient', () => {
       // Test various endpoint formats
       await client.request('/api/test');
       expect(mockAxiosInstance.request).toHaveBeenLastCalledWith(
-        expect.objectContaining({ url: '/api/test' })
+        expect.objectContaining({ url: '/api/test' }),
       );
 
       await client.request('api/test');
       expect(mockAxiosInstance.request).toHaveBeenLastCalledWith(
-        expect.objectContaining({ url: '/api/test' })
+        expect.objectContaining({ url: '/api/test' }),
       );
 
       await client.request('test');
       expect(mockAxiosInstance.request).toHaveBeenLastCalledWith(
-        expect.objectContaining({ url: '/api/test' })
+        expect.objectContaining({ url: '/api/test' }),
       );
 
       await client.request('/test');
       expect(mockAxiosInstance.request).toHaveBeenLastCalledWith(
-        expect.objectContaining({ url: '/api/test' })
+        expect.objectContaining({ url: '/api/test' }),
       );
     });
 
@@ -143,8 +143,8 @@ describe('GrocyApiClient', () => {
 
       expect(mockAxiosInstance.request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: '/api/test?param1=value1&param2=value2'
-        })
+          url: '/api/test?param1=value1&param2=value2',
+        }),
       );
     });
 
@@ -157,8 +157,8 @@ describe('GrocyApiClient', () => {
       expect(mockAxiosInstance.request).toHaveBeenCalledWith(
         expect.objectContaining({
           method: 'POST',
-          data: body
-        })
+          data: body,
+        }),
       );
     });
 
@@ -166,7 +166,7 @@ describe('GrocyApiClient', () => {
       mockAxiosInstance.request.mockResolvedValue({
         data: { error: 'Bad request' },
         status: 400,
-        headers: {}
+        headers: {},
       });
 
       await expect(client.request('/test')).rejects.toThrow('HTTP 400 error');
@@ -198,7 +198,7 @@ describe('GrocyApiClient', () => {
     it('should call GET method correctly', async () => {
       await client.get('/test');
       expect(mockAxiosInstance.request).toHaveBeenCalledWith(
-        expect.objectContaining({ method: 'GET' })
+        expect.objectContaining({ method: 'GET' }),
       );
     });
 
@@ -206,7 +206,7 @@ describe('GrocyApiClient', () => {
       const body = { test: 'data' };
       await client.post('/test', body);
       expect(mockAxiosInstance.request).toHaveBeenCalledWith(
-        expect.objectContaining({ method: 'POST', data: body })
+        expect.objectContaining({ method: 'POST', data: body }),
       );
     });
 
@@ -214,14 +214,14 @@ describe('GrocyApiClient', () => {
       const body = { test: 'data' };
       await client.put('/test', body);
       expect(mockAxiosInstance.request).toHaveBeenCalledWith(
-        expect.objectContaining({ method: 'PUT', data: body })
+        expect.objectContaining({ method: 'PUT', data: body }),
       );
     });
 
     it('should call DELETE method correctly', async () => {
       await client.delete('/test');
       expect(mockAxiosInstance.request).toHaveBeenCalledWith(
-        expect.objectContaining({ method: 'DELETE' })
+        expect.objectContaining({ method: 'DELETE' }),
       );
     });
 
@@ -229,7 +229,7 @@ describe('GrocyApiClient', () => {
       const body = { test: 'data' };
       await client.patch('/test', body);
       expect(mockAxiosInstance.request).toHaveBeenCalledWith(
-        expect.objectContaining({ method: 'PATCH', data: body })
+        expect.objectContaining({ method: 'PATCH', data: body }),
       );
     });
   });

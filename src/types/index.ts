@@ -54,11 +54,16 @@ export const ConfigSchema = z.object({
       enable_ssl_verify: z.boolean().default(true),
       response_size_limit: z.number().positive().default(10000),
     }),
-    tools: z.record(z.string(), z.object({
-      enabled: z.boolean().default(false),
-      ack_token: z.string().optional(),
-    }).catchall(z.unknown())),
-  })
+    tools: z.record(
+      z.string(),
+      z
+        .object({
+          enabled: z.boolean().default(false),
+          ack_token: z.string().optional(),
+        })
+        .catchall(z.unknown()),
+    ),
+  }),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -153,7 +158,7 @@ export const ToolResultSchema = z.object({
   data: z.any().optional(),
   error: z.string().optional(),
   message: z.string().optional(),
-  details: z.any().optional()
+  details: z.any().optional(),
 });
 
 export const ToolDefinitionSchema = z.object({
@@ -162,13 +167,16 @@ export const ToolDefinitionSchema = z.object({
   inputSchema: z.object({
     type: z.literal('object'),
     properties: z.record(z.string(), z.any()),
-    required: z.array(z.string()).optional()
-  })
+    required: z.array(z.string()).optional(),
+  }),
 });
 
 export const ToolModuleSchema = z.object({
   definitions: z.array(ToolDefinitionSchema),
-  handlers: z.record(z.string(), z.custom<ToolHandler>((v): v is ToolHandler => typeof v === 'function'))
+  handlers: z.record(
+    z.string(),
+    z.custom<ToolHandler>((v): v is ToolHandler => typeof v === 'function'),
+  ),
 });
 
 // Type guards
@@ -181,17 +189,21 @@ export function isToolDefinition(obj: any): obj is ToolDefinition {
 }
 
 export function isToolModule(obj: any): obj is ToolModule {
-  return obj &&
-         typeof obj === 'object' &&
-         Array.isArray(obj.definitions) &&
-         typeof obj.handlers === 'object' &&
-         obj.definitions.every((def: any) => isToolDefinition(def));
+  return (
+    obj &&
+    typeof obj === 'object' &&
+    Array.isArray(obj.definitions) &&
+    typeof obj.handlers === 'object' &&
+    obj.definitions.every((def: any) => isToolDefinition(def))
+  );
 }
 
 // Utility types
 export type Awaitable<T> = T | Promise<T>;
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+/** Keys of T that are required (not optional). Uses structural check compatible with TS optional properties. */
 export type RequiredKeys<T> = {
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- `{}` here is the standard “optional key” probe for mapped types
   [K in keyof T]-?: {} extends Pick<T, K> ? never : K;
 }[keyof T];
 

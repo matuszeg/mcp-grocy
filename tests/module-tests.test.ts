@@ -16,12 +16,12 @@ describe('Dynamic Module Tests', () => {
 
   it('should discover module tests', async () => {
     console.log(`Found ${toolModules.length} tool modules`);
-    
+
     // Basic test that modules were loaded
     expect(toolModules.length).toBeGreaterThan(0);
-    
+
     // Test that each module has the expected structure
-    toolModules.forEach(module => {
+    toolModules.forEach((module) => {
       expect(module).toHaveProperty('definitions');
       expect(module).toHaveProperty('handlers');
       expect(Array.isArray(module.definitions)).toBe(true);

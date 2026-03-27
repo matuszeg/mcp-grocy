@@ -94,7 +94,10 @@ describe('startHttpServer', () => {
     expect(res.ok).toBe(true);
     const session = res.headers.get('mcp-session-id');
     expect(session).toBeTruthy();
-    const payload = (await res.json()) as { result?: { protocolVersion?: string }; error?: unknown };
+    const payload = (await res.json()) as {
+      result?: { protocolVersion?: string };
+      error?: unknown;
+    };
     expect(payload.error).toBeUndefined();
     expect(payload.result?.protocolVersion).toBe('2024-11-05');
   });
@@ -142,7 +145,7 @@ describe('startHttpServer', () => {
               statusCode: res.statusCode ?? 0,
               headers: res.headers,
               text: Buffer.concat(chunks).toString('utf8'),
-            })
+            }),
           );
           res.on('error', reject);
           setTimeout(() => {
@@ -153,7 +156,7 @@ describe('startHttpServer', () => {
               text: Buffer.concat(chunks).toString('utf8'),
             });
           }, 1500);
-        }
+        },
       );
       req.on('error', reject);
     });
@@ -187,7 +190,7 @@ describe('startHttpServer', () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'ping' }),
-      }
+      },
     );
     expect(res.status).toBe(404);
   });
@@ -225,7 +228,7 @@ describe('startHttpServer', () => {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify(initBody),
-                }
+                },
               )
                 .then(async (postRes) => {
                   expect(postRes.status).toBe(202);
@@ -235,7 +238,7 @@ describe('startHttpServer', () => {
             }
           });
           res.on('error', reject);
-        }
+        },
       );
       req.on('error', reject);
       setTimeout(() => {
@@ -312,7 +315,7 @@ describe('startHttpServer', () => {
       const port = serverPort(httpServer);
       const res = await fetch(
         `http://127.0.0.1:${port}/mcp/sse?access_token=${encodeURIComponent(secret)}`,
-        { headers: { Accept: 'text/event-stream' } }
+        { headers: { Accept: 'text/event-stream' } },
       );
       expect(res.ok).toBe(true);
     });

@@ -382,9 +382,9 @@ tools:
       const defaults = {
         GROCY_BASE_URL: 'https://valid-url.com',
         HTTP_SERVER_PORT: '8080',
-        REST_RESPONSE_SIZE_LIMIT: '10000'
+        REST_RESPONSE_SIZE_LIMIT: '10000',
       };
-      
+
       Object.assign(process.env, defaults, overrides);
     };
 

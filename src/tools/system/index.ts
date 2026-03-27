@@ -11,11 +11,11 @@ export const systemModule: ToolModule = {
     system_locations_get: handlers.getLocations,
     system_units_get: handlers.getQuantityUnits,
     system_users_get: handlers.getUsers,
-    
+
     // Developer Utilities
     system_dev_call_api: handlers.callGrocyApi,
-    system_dev_test_request: handlers.testRequest
-  }
+    system_dev_test_request: handlers.testRequest,
+  },
 };
 
 export * from './definitions.js';

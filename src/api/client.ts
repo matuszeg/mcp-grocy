@@ -36,9 +36,11 @@ export class GrocyApiClient {
       validateStatus: () => true, // Handle all status codes manually
       timeout: 30000,
       maxContentLength: config.grocy.max_response_bytes,
-      httpsAgent: config.grocy.enable_ssl_verify ? undefined : new https.Agent({
-        rejectUnauthorized: false
-      })
+      httpsAgent: config.grocy.enable_ssl_verify
+        ? undefined
+        : new https.Agent({
+            rejectUnauthorized: false,
+          }),
     });
 
     return instance;
@@ -54,7 +56,7 @@ export class GrocyApiClient {
       (error) => {
         logger.error('Request error', 'API', { error: error.message });
         return Promise.reject(error);
-      }
+      },
     );
 
     // Response logging
@@ -63,7 +65,7 @@ export class GrocyApiClient {
         if (response.status >= 400) {
           logger.warn(`HTTP ${response.status}`, 'API', {
             url: response.config?.url,
-            status: response.status
+            status: response.status,
           });
         }
         return response;
@@ -71,7 +73,7 @@ export class GrocyApiClient {
       (error) => {
         logger.error('Response error', 'API', { error: error.message });
         return Promise.reject(error);
-      }
+      },
     );
   }
 
@@ -89,20 +91,14 @@ export class GrocyApiClient {
   }
 
   public async request<T = any>(
-    endpoint: string, 
-    options: ApiRequestOptions = {}
+    endpoint: string,
+    options: ApiRequestOptions = {},
   ): Promise<ApiResponse<T>> {
-    const {
-      method = 'GET',
-      body = null,
-      headers = {},
-      queryParams = {},
-      timeout
-    } = options;
+    const { method = 'GET', body = null, headers = {}, queryParams = {}, timeout } = options;
 
     return ErrorHandler.handleAsync(async () => {
       let url = this.normalizeEndpoint(endpoint);
-      
+
       if (Object.keys(queryParams).length > 0) {
         url += `?${this.buildQueryString(queryParams)}`;
       }
@@ -111,12 +107,12 @@ export class GrocyApiClient {
         method,
         url,
         headers: {
-          'Accept': 'application/json',
+          Accept: 'application/json',
           'Content-Type': 'application/json',
           ...config.getCustomHeaders(),
-          ...headers
+          ...headers,
         },
-        ...(timeout && { timeout })
+        ...(timeout && { timeout }),
       };
 
       if (['POST', 'PUT', 'PATCH'].includes(method) && body !== null) {
@@ -124,59 +120,59 @@ export class GrocyApiClient {
       }
 
       const response = await this.axiosInstance.request(requestConfig);
-      
+
       if (response.status >= 400) {
         throw new ApiError(
           response.data?.message || `HTTP ${response.status} error`,
           response.status,
           `${method} ${url}`,
-          { responseData: response.data }
+          { responseData: response.data },
         );
       }
-      
+
       return {
         data: response.data,
         status: response.status,
-        headers: response.headers as Record<string, any>
+        headers: response.headers as Record<string, any>,
       };
     }, `API ${method} ${endpoint}`);
   }
 
   // Convenience methods
   public async get<T = any>(
-    endpoint: string, 
-    options: Omit<ApiRequestOptions, 'method'> = {}
+    endpoint: string,
+    options: Omit<ApiRequestOptions, 'method'> = {},
   ): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { ...options, method: 'GET' });
   }
 
   public async post<T = any>(
-    endpoint: string, 
-    body?: any, 
-    options: Omit<ApiRequestOptions, 'method' | 'body'> = {}
+    endpoint: string,
+    body?: any,
+    options: Omit<ApiRequestOptions, 'method' | 'body'> = {},
   ): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { ...options, method: 'POST', body });
   }
 
   public async put<T = any>(
-    endpoint: string, 
-    body?: any, 
-    options: Omit<ApiRequestOptions, 'method' | 'body'> = {}
+    endpoint: string,
+    body?: any,
+    options: Omit<ApiRequestOptions, 'method' | 'body'> = {},
   ): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { ...options, method: 'PUT', body });
   }
 
   public async delete<T = any>(
-    endpoint: string, 
-    options: Omit<ApiRequestOptions, 'method'> = {}
+    endpoint: string,
+    options: Omit<ApiRequestOptions, 'method'> = {},
   ): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { ...options, method: 'DELETE' });
   }
 
   public async patch<T = any>(
-    endpoint: string, 
-    body?: any, 
-    options: Omit<ApiRequestOptions, 'method' | 'body'> = {}
+    endpoint: string,
+    body?: any,
+    options: Omit<ApiRequestOptions, 'method' | 'body'> = {},
   ): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { ...options, method: 'PATCH', body });
   }

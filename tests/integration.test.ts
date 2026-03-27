@@ -14,14 +14,14 @@ vi.mock('../src/config/environment.js', () => ({
       GROCY_ENABLE_SSL_VERIFY: true,
       ENABLE_HTTP_SERVER: false,
       HTTP_SERVER_PORT: 8080,
-      REST_RESPONSE_SIZE_LIMIT: 10000
+      REST_RESPONSE_SIZE_LIMIT: 10000,
     }),
     getGrocyBaseUrl: () => 'http://test-grocy:9283',
     getApiUrl: () => 'http://test-grocy:9283/api',
     hasApiKeyAuth: () => true,
     getCustomHeaders: () => ({}),
-    parseToolConfiguration: () => ({ enabledTools: new Set() })
-  }
+    parseToolConfiguration: () => ({ enabledTools: new Set() }),
+  },
 }));
 
 // Mock the API client
@@ -31,14 +31,14 @@ vi.mock('../src/api/client.js', () => ({
     get: vi.fn(),
     post: vi.fn(),
     put: vi.fn(),
-    delete: vi.fn()
+    delete: vi.fn(),
   },
   ApiError: class ApiError extends Error {
     constructor(message: string) {
       super(message);
       this.name = 'ApiError';
     }
-  }
+  },
 }));
 
 describe('Integration Tests', () => {
@@ -92,7 +92,7 @@ describe('Integration Tests', () => {
       expect(toolNames.length).toBe(definitions.length);
 
       // Each definition should have a corresponding handler
-      definitions.forEach(def => {
+      definitions.forEach((def) => {
         const handler = toolRegistry.getHandler(def.name);
         expect(handler).toBeDefined();
         expect(typeof handler).toBe('function');
@@ -102,7 +102,7 @@ describe('Integration Tests', () => {
     it('should have valid tool definitions structure', () => {
       const definitions = toolRegistry.getDefinitions();
 
-      definitions.forEach(def => {
+      definitions.forEach((def) => {
         // Check required fields
         expect(def.name).toBeTypeOf('string');
         expect(def.description).toBeTypeOf('string');
@@ -135,11 +135,11 @@ describe('Integration Tests', () => {
 
     it('should validate tool registry has handlers for all definitions', () => {
       const definitions = toolRegistry.getDefinitions();
-      
+
       expect(definitions.length).toBeGreaterThan(30);
-      
+
       // Each definition should have a handler
-      definitions.forEach(def => {
+      definitions.forEach((def) => {
         const handler = toolRegistry.getHandler(def.name);
         expect(handler).toBeDefined();
         expect(typeof handler).toBe('function');
@@ -168,15 +168,17 @@ describe('Integration Tests', () => {
       // Mock tool filtering configuration
       vi.doMock('../src/config/environment.js', () => ({
         default: {
-          get: () => ({ /* config */ }),
-          parseToolConfiguration: () => ({ 
-            allowedTools: new Set(['get_products', 'get_stock']), 
-            blockedTools: new Set(['delete_recipe_from_meal_plan']) 
+          get: () => ({
+            /* config */
+          }),
+          parseToolConfiguration: () => ({
+            allowedTools: new Set(['get_products', 'get_stock']),
+            blockedTools: new Set(['delete_recipe_from_meal_plan']),
           }),
           getGrocyBaseUrl: () => 'http://test-grocy:9283',
           hasApiKeyAuth: () => true,
-          getCustomHeaders: () => ({})
-        }
+          getCustomHeaders: () => ({}),
+        },
       }));
 
       await expect(GrocyMcpServer.create()).resolves.toBeDefined();
@@ -187,14 +189,14 @@ describe('Integration Tests', () => {
     it('should load all tool modules correctly', async () => {
       // Test that the dynamic module loading system works
       const registry = await createToolRegistry();
-      
+
       expect(registry).toBeDefined();
       expect(registry.getDefinitions().length).toBeGreaterThan(25); // Should have many tools
       expect(registry.getToolNames().length).toBeGreaterThan(25);
-      
+
       // Verify all tools have handlers
       const definitions = registry.getDefinitions();
-      definitions.forEach(def => {
+      definitions.forEach((def) => {
         const handler = registry.getHandler(def.name);
         expect(handler).toBeDefined();
         expect(typeof handler).toBe('function');

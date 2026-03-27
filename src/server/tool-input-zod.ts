@@ -78,7 +78,7 @@ function propertyToZod(prop: JsonProp, required: boolean): z.ZodTypeAny {
 
 function objectPropsToZod(
   properties: Record<string, JsonProp>,
-  requiredList: string[] | undefined
+  requiredList: string[] | undefined,
 ): z.ZodObject<Record<string, z.ZodTypeAny>> {
   const required = new Set(requiredList ?? []);
   const shape: Record<string, z.ZodTypeAny> = {};

@@ -6,8 +6,8 @@ export const householdToolDefinitions = [
     inputSchema: {
       type: 'object' as const,
       properties: {},
-      required: []
-    }
+      required: [],
+    },
   },
   {
     name: 'household_chores_execute',
@@ -17,23 +17,26 @@ export const householdToolDefinitions = [
       properties: {
         choreId: {
           type: 'number',
-          description: 'ID of the chore to track execution for. Use household_chores_get tool to find the correct chore ID.'
+          description:
+            'ID of the chore to track execution for. Use household_chores_get tool to find the correct chore ID.',
         },
         executedBy: {
           type: 'number',
-          description: 'ID of the user who executed the chore (optional). Use system_users_get tool to find user IDs.'
+          description:
+            'ID of the user who executed the chore (optional). Use system_users_get tool to find user IDs.',
         },
         trackedTime: {
           type: 'string',
-          description: 'Time when the chore was executed in YYYY-MM-DD HH:mm:ss format (optional, defaults to current time)'
+          description:
+            'Time when the chore was executed in YYYY-MM-DD HH:mm:ss format (optional, defaults to current time)',
         },
         note: {
           type: 'string',
-          description: 'Optional note for the chore execution'
-        }
+          description: 'Optional note for the chore execution',
+        },
       },
-      required: ['choreId']
-    }
+      required: ['choreId'],
+    },
   },
 
   // ==================== TASK MANAGEMENT ====================
@@ -43,8 +46,8 @@ export const householdToolDefinitions = [
     inputSchema: {
       type: 'object' as const,
       properties: {},
-      required: []
-    }
+      required: [],
+    },
   },
   {
     name: 'household_tasks_complete',
@@ -54,15 +57,16 @@ export const householdToolDefinitions = [
       properties: {
         taskId: {
           type: 'number',
-          description: 'ID of the task to complete. Use household_tasks_get tool to find the correct task ID.'
+          description:
+            'ID of the task to complete. Use household_tasks_get tool to find the correct task ID.',
         },
         note: {
           type: 'string',
-          description: 'Optional note for the task completion'
-        }
+          description: 'Optional note for the task completion',
+        },
       },
-      required: ['taskId']
-    }
+      required: ['taskId'],
+    },
   },
 
   // ==================== BATTERY MANAGEMENT ====================
@@ -72,8 +76,8 @@ export const householdToolDefinitions = [
     inputSchema: {
       type: 'object' as const,
       properties: {},
-      required: []
-    }
+      required: [],
+    },
   },
   {
     name: 'household_batteries_charge',
@@ -83,49 +87,55 @@ export const householdToolDefinitions = [
       properties: {
         batteryId: {
           type: 'number',
-          description: 'ID of the battery to charge. Use household_batteries_get tool to find the correct battery ID.'
+          description:
+            'ID of the battery to charge. Use household_batteries_get tool to find the correct battery ID.',
         },
         trackedTime: {
           type: 'string',
-          description: 'Time when the battery was charged in YYYY-MM-DD HH:mm:ss format (optional, defaults to current time)'
+          description:
+            'Time when the battery was charged in YYYY-MM-DD HH:mm:ss format (optional, defaults to current time)',
         },
         note: {
           type: 'string',
-          description: 'Optional note for the battery charge'
-        }
+          description: 'Optional note for the battery charge',
+        },
       },
-      required: ['batteryId']
-    }
+      required: ['batteryId'],
+    },
   },
   {
     name: 'household_batteries_print_label',
-    description: '[HOUSEHOLD/BATTERIES] Print a Grocycode label for a battery. Use household_batteries_get to find valid batteryId values.',
+    description:
+      '[HOUSEHOLD/BATTERIES] Print a Grocycode label for a battery. Use household_batteries_get to find valid batteryId values.',
     inputSchema: {
       type: 'object' as const,
       properties: {
         batteryId: {
           type: 'number',
-          description: 'ID of the battery to print label for. Use household_batteries_get tool to find the correct battery ID.'
-        }
+          description:
+            'ID of the battery to print label for. Use household_batteries_get tool to find the correct battery ID.',
+        },
       },
-      required: ['batteryId']
-    }
+      required: ['batteryId'],
+    },
   },
 
   // ==================== CHORE LABEL PRINTING ====================
   {
     name: 'household_chores_print_label',
-    description: '[HOUSEHOLD/CHORES] Print a Grocycode label for a chore. Use household_chores_get to find valid choreId values.',
+    description:
+      '[HOUSEHOLD/CHORES] Print a Grocycode label for a chore. Use household_chores_get to find valid choreId values.',
     inputSchema: {
       type: 'object' as const,
       properties: {
         choreId: {
           type: 'number',
-          description: 'ID of the chore to print label for. Use household_chores_get tool to find the correct chore ID.'
-        }
+          description:
+            'ID of the chore to print label for. Use household_chores_get tool to find the correct chore ID.',
+        },
       },
-      required: ['choreId']
-    }
+      required: ['choreId'],
+    },
   },
 
   // ==================== EQUIPMENT MANAGEMENT ====================
@@ -135,28 +145,29 @@ export const householdToolDefinitions = [
     inputSchema: {
       type: 'object' as const,
       properties: {},
-      required: []
-    }
+      required: [],
+    },
   },
 
   // ==================== ACTION UTILITIES ====================
   {
     name: 'household_actions_undo',
-    description: '[HOUSEHOLD/ACTIONS] Undo a previously executed action (chore execution, task completion, or battery charge).',
+    description:
+      '[HOUSEHOLD/ACTIONS] Undo a previously executed action (chore execution, task completion, or battery charge).',
     inputSchema: {
       type: 'object' as const,
       properties: {
         entityType: {
           type: 'string',
           enum: ['chore', 'chores', 'task', 'tasks', 'battery', 'batteries'],
-          description: 'Type of entity to undo action for'
+          description: 'Type of entity to undo action for',
         },
         id: {
           type: 'number',
-          description: 'ID of the specific execution/completion/charge to undo'
-        }
+          description: 'ID of the specific execution/completion/charge to undo',
+        },
       },
-      required: ['entityType', 'id']
-    }
-  }
+      required: ['entityType', 'id'],
+    },
+  },
 ];

@@ -11,8 +11,8 @@ export const shoppingModule: ToolModule = {
     shopping_list_add_item: handlers.addShoppingListItem,
     shopping_list_remove_item: handlers.removeShoppingListItem,
     shopping_locations_get: handlers.getShoppingLocations,
-    shopping_list_print_thermal: handlers.printShoppingListThermal
-  }
+    shopping_list_print_thermal: handlers.printShoppingListThermal,
+  },
 };
 
 export * from './definitions.js';
