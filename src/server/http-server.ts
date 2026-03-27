@@ -88,6 +88,7 @@ export function startHttpServer(
           'Content-Type',
           'Accept',
           'Mcp-Session-Id',
+          'Mcp-Protocol-Version',
           'Authorization',
           'X-MCP-Access-Token',
         ],
