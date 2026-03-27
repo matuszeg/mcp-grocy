@@ -5,6 +5,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
+  CallToolRequestSchema,
   CallToolResult,
   ErrorCode,
   McpError,
@@ -20,11 +21,14 @@ import { toolDefinitionInputZod } from './tool-input-zod.js';
 import { logger } from '../utils/logger.js';
 import { ErrorHandler } from '../utils/errors.js';
 
-const GROCY_SERVER_CAPABILITIES: ServerCapabilities = {
-  tools: {},
+/** Janix mcp-validator (2025-03-26) checks `tools.asyncSupported`; merge keeps this when SDK adds `listChanged`. */
+const GROCY_SERVER_CAPABILITIES = {
+  tools: {
+    asyncSupported: true,
+  },
   resources: {},
   prompts: {},
-};
+} as ServerCapabilities;
 
 const SERVER_INFO = {
   name: PACKAGE_NAME,
@@ -123,6 +127,37 @@ export class GrocyMcpServer {
     logger.config(
       `Registered ${this.toolRegistry.getDefinitions().length} tool(s) (${this.enabledTools.size} enabled) and ${STATIC_MCP_RESOURCE_ENTRIES.length} resource(s) via McpServer`,
     );
+
+    this.installStrictToolsCallHandling(mcp);
+  }
+
+  /**
+   * MCP SDK maps most tool errors to CallToolResult with isError, but compliance harnesses expect
+   * JSON-RPC errors for unknown/disabled tool names.
+   */
+  private installStrictToolsCallHandling(mcp: McpServer): void {
+    const server = mcp.server as unknown as {
+      _requestHandlers: Map<string, (request: unknown, extra: unknown) => Promise<unknown>>;
+    };
+    const previous = server._requestHandlers.get('tools/call');
+    if (!previous) {
+      return;
+    }
+
+    const toolsMap = (mcp as unknown as { _registeredTools: Record<string, { enabled: boolean }> })
+      ._registeredTools;
+
+    mcp.server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
+      const name = request.params.name;
+      const registered = toolsMap[name];
+      if (!registered) {
+        throw new McpError(ErrorCode.MethodNotFound, `Tool '${name}' not found`);
+      }
+      if (!registered.enabled) {
+        throw new McpError(ErrorCode.InvalidParams, `Tool '${name}' is disabled`);
+      }
+      return previous(request, extra) as Promise<CallToolResult>;
+    });
   }
 
   private async invokeTool(

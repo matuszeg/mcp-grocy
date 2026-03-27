@@ -16,6 +16,24 @@ function serverPort(s: HttpServer): number {
   return addr.port;
 }
 
+/** Avoids rare races where the first request runs before Express routes are fully accepting traffic. */
+async function waitUntilHttpServerReady(port: number, maxMs = 3000): Promise<void> {
+  const deadline = Date.now() + maxMs;
+  let lastErr: unknown;
+  while (Date.now() < deadline) {
+    try {
+      const res = await fetch(`http://127.0.0.1:${port}/`);
+      if (res.ok) return;
+    } catch (e) {
+      lastErr = e;
+    }
+    await new Promise((r) => setTimeout(r, 25));
+  }
+  throw new Error(
+    `HTTP server on port ${port} did not become ready: ${lastErr instanceof Error ? lastErr.message : String(lastErr)}`,
+  );
+}
+
 async function closeServer(s: HttpServer): Promise<void> {
   s.closeAllConnections?.();
   await new Promise<void>((resolve, reject) => {
@@ -128,6 +146,7 @@ describe('startHttpServer', () => {
   it('GET /mcp/sse returns event-stream and endpoint event with sessionId', async () => {
     httpServer = await startHttpServer(() => grocy.createMcpServer(), 0, { corsOrigin: '*' });
     const port = serverPort(httpServer);
+    await waitUntilHttpServerReady(port);
 
     const { statusCode, headers, text } = await new Promise<{
       statusCode: number;
