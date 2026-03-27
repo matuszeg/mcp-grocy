@@ -237,13 +237,11 @@ export const inventoryToolDefinitions: ToolDefinition[] = [
         },
         fromLocationId: {
           type: 'number',
-          description:
-            'Source location ID. Use system_locations_get to find the location ID.',
+          description: 'Source location ID. Use system_locations_get to find the location ID.',
         },
         toLocationId: {
           type: 'number',
-          description:
-            'Destination location ID. Use system_locations_get to find the location ID.',
+          description: 'Destination location ID. Use system_locations_get to find the location ID.',
         },
         note: {
           type: 'string',

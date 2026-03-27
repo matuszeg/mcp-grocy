@@ -266,17 +266,17 @@ npm start
 
 ### Development Commands
 
-| Command              | Description                                         |
-| -------------------- | --------------------------------------------------- |
-| `npm run build`      | Build TypeScript to JavaScript                      |
-| `npm start`          | Run the built server (`build/main.js`)              |
-| `npm run dev`        | Build, then run (use mock `.env` for local testing) |
-| `npm run watch`      | Watch mode for development                          |
-| `npm test`           | Run test suite                                      |
-| `npm run test:watch` | Run tests in watch mode                             |
-| `npm run inspector`  | Launch MCP protocol inspector                       |
-| `npm run dev:mcp-tef` | Run [mcp-tef](https://github.com/StacklokLabs/mcp-tef) locally (needs **uv** + **Ollama**) for tool-description / similarity checks |
-| `npm run report:mcp-tef` | One command: build, temporary mcp-grocy HTTP + mcp-tef, write `reports/mcp-tef/<timestamp>/` (similarity JSON + `SUMMARY.md`) |
+| Command                  | Description                                                                                                                         |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run build`          | Build TypeScript to JavaScript                                                                                                      |
+| `npm start`              | Run the built server (`build/main.js`)                                                                                              |
+| `npm run dev`            | Build, then run (use mock `.env` for local testing)                                                                                 |
+| `npm run watch`          | Watch mode for development                                                                                                          |
+| `npm test`               | Run test suite                                                                                                                      |
+| `npm run test:watch`     | Run tests in watch mode                                                                                                             |
+| `npm run inspector`      | Launch MCP protocol inspector                                                                                                       |
+| `npm run dev:mcp-tef`    | Run [mcp-tef](https://github.com/StacklokLabs/mcp-tef) locally (needs **uv** + **Ollama**) for tool-description / similarity checks |
+| `npm run report:mcp-tef` | One command: build, temporary mcp-grocy HTTP + mcp-tef, write `reports/mcp-tef/<timestamp>/` (similarity JSON + `SUMMARY.md`)       |
 
 ### Optional: mcp-tef (local tool evaluation)
 
