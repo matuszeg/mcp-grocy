@@ -53,6 +53,8 @@ RUN if echo "$BUILD_FROM" | grep -q "home-assistant"; then \
     echo "docker build: Skipping rootfs copy."; \
   fi
 
+ARG RELEASE_VERSION
+ENV RELEASE_VERSION=${RELEASE_VERSION}
 RUN npm run build
 
 
