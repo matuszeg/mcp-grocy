@@ -31,7 +31,9 @@ COPY package*.json ./
 COPY tsconfig.json ./
 
 # Install dependencies but skip the prepare script which runs build
-RUN npm install --ignore-scripts
+# We set fetch-retry-maxtimeout and --maxsockets 1 to prevent QEMU network hangs when building for arm64 on amd64
+RUN npm config set fetch-retry-maxtimeout 600000 -g && \
+    npm install --ignore-scripts --maxsockets 1
 
 # COPY . . should come before conditional rootfs copy if rootfs might overlay app files,
 # or after if app files might overlay rootfs defaults.
