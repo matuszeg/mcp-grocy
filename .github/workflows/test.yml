@@ -91,53 +91,8 @@ jobs:
           name: mcp-validator-reports-${{ matrix.mcp_protocol_version }}
           path: mcp-validator/reports/
 
-  mcp-validator-http:
-    name: MCP HTTP (Janix harness)
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      HTTP_SERVER_PORT: '8790'
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-
-      - name: Build server
-        run: npm run build
-
-      - name: Start MCP HTTP server
-        run: bash "${GITHUB_WORKSPACE}/scripts/start-mcp-http-for-tests.sh"
-
-      - uses: actions/checkout@v4
-        with:
-          repository: Janix-ai/mcp-validator
-          ref: v0.3.1
-          path: mcp-validator
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: HTTP compliance tests
-        working-directory: mcp-validator
-        run: |
-          python -m venv .venv
-          . .venv/bin/activate
-          pip install -r requirements.txt
-          python -m mcp_testing.scripts.http_compliance_test \
-            --server-url "http://127.0.0.1:${HTTP_SERVER_PORT}/mcp" \
-            --output-dir reports
-
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: mcp-validator-http-reports
-          path: mcp-validator/reports/
-
-      - name: Stop MCP HTTP server
-        if: always()
-        run: bash "${GITHUB_WORKSPACE}/scripts/stop-mcp-http-for-tests.sh"
+  # Janix mcp-validator HTTP job removed: http_compliance_test (v0.3.1) sends a non-spec
+  # initialize body; MCP SDK rejects it with 400. Restore a job here when upstream is fixed.
 
   test-build:
     name: Test Docker Image Build

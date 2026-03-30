@@ -220,7 +220,7 @@ export function startHttpServer(
               code: -32000,
               message: `Internal server error: ${error instanceof Error ? error.message : String(error)}`,
             },
-            id: req.body?.id || null,
+            id: (req.body as { id?: unknown } | undefined)?.id ?? null,
           });
         }
       }
