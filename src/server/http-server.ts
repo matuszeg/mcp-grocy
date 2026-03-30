@@ -41,7 +41,9 @@ function createMcpAccessGate(accessToken: string | undefined) {
     const ok =
       (typeof bearer === 'string' && safeEqual(bearer, `Bearer ${accessToken}`)) ||
       (typeof headerTokenStr === 'string' && safeEqual(headerTokenStr, accessToken)) ||
-      (req.method === 'GET' && typeof queryToken === 'string' && safeEqual(queryToken, accessToken));
+      (req.method === 'GET' &&
+        typeof queryToken === 'string' &&
+        safeEqual(queryToken, accessToken));
     if (ok) {
       next();
       return;
@@ -220,14 +222,18 @@ export function startHttpServer(
         } else {
           // Non-initialize request without a session ID (e.g. GET SSE before session established)
           // Return 405 so clients that probe for SSE support handle it gracefully
-          res.status(405).set('Allow', 'POST').json({
-            jsonrpc: '2.0',
-            error: {
-              code: -32000,
-              message: 'Method not allowed: session not established. Send a POST initialize request first.',
-            },
-            id: req.body?.id || null,
-          });
+          res
+            .status(405)
+            .set('Allow', 'POST')
+            .json({
+              jsonrpc: '2.0',
+              error: {
+                code: -32000,
+                message:
+                  'Method not allowed: session not established. Send a POST initialize request first.',
+              },
+              id: req.body?.id || null,
+            });
           return;
         }
 

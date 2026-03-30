@@ -40,6 +40,7 @@ const SERVER_INFO = {
 
 export class GrocyMcpServer {
   private static sigintHandlerRegistered = false;
+  private static activeServers = new Set<McpServer>();
 
   private mcp: McpServer;
   private enabledTools = new Set<string>();
@@ -62,14 +63,13 @@ export class GrocyMcpServer {
   }
 
   static async create(): Promise<GrocyMcpServer> {
-    const [toolRegistry, resourceHandler] = await Promise.all([
-      createToolRegistry(),
-      Promise.resolve(new ResourceHandler()),
-    ]);
+    const toolRegistry = await createToolRegistry();
+    const resourceHandler = new ResourceHandler();
 
     const mcp = new McpServer(SERVER_INFO, {
       capabilities: GROCY_SERVER_CAPABILITIES,
     });
+    GrocyMcpServer.activeServers.add(mcp);
 
     return new GrocyMcpServer(mcp, toolRegistry, resourceHandler);
   }
@@ -134,18 +134,32 @@ export class GrocyMcpServer {
   /**
    * MCP SDK maps most tool errors to CallToolResult with isError, but compliance harnesses expect
    * JSON-RPC errors for unknown/disabled tool names.
+   *
+   * WARNING: accesses SDK internals (_requestHandlers, _registeredTools).
+   * Tested against @modelcontextprotocol/sdk ^1.28.0 — verify after upgrades.
    */
   private installStrictToolsCallHandling(mcp: McpServer): void {
     const server = mcp.server as unknown as {
       _requestHandlers: Map<string, (request: unknown, extra: unknown) => Promise<unknown>>;
     };
-    const previous = server._requestHandlers.get('tools/call');
+    const previous = server._requestHandlers?.get('tools/call');
     if (!previous) {
+      logger.warn(
+        'Could not install strict tools/call handling — SDK internals may have changed',
+        'MCP',
+      );
       return;
     }
 
     const toolsMap = (mcp as unknown as { _registeredTools: Record<string, { enabled: boolean }> })
       ._registeredTools;
+    if (!toolsMap) {
+      logger.warn(
+        'Could not install strict tools/call handling — _registeredTools not found',
+        'MCP',
+      );
+      return;
+    }
 
     mcp.server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
       const name = request.params.name;
@@ -164,13 +178,6 @@ export class GrocyMcpServer {
     toolName: string,
     args: Record<string, unknown>,
   ): Promise<CallToolResult> {
-    if (!this.enabledTools.has(toolName)) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        `Tool '${toolName}' is not enabled. Enable it in your configuration.`,
-      );
-    }
-
     const handler = this.toolRegistry.getHandler(toolName);
     if (!handler) {
       throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${toolName}`);
@@ -193,7 +200,7 @@ export class GrocyMcpServer {
       return result as CallToolResult;
     } catch (error: unknown) {
       ErrorHandler.logError(error, `tool: ${toolName}`);
-      throw ErrorHandler.toMcpError(error as Error, `${toolName} failed`);
+      throw ErrorHandler.toMcpError(error, `${toolName} failed`);
     }
   }
 
@@ -208,7 +215,9 @@ export class GrocyMcpServer {
     GrocyMcpServer.sigintHandlerRegistered = true;
     process.on('SIGINT', async () => {
       logger.info('Shutting down server...', 'SERVER');
-      await this.mcp.close();
+      await Promise.all(
+        Array.from(GrocyMcpServer.activeServers).map((s) => s.close().catch(() => {})),
+      );
       process.exit(0);
     });
   }
@@ -217,6 +226,7 @@ export class GrocyMcpServer {
     const mcp = new McpServer(SERVER_INFO, {
       capabilities: GROCY_SERVER_CAPABILITIES,
     });
+    GrocyMcpServer.activeServers.add(mcp);
     this.registerToolsAndResources(mcp);
     this.setupErrorHandling(mcp);
     return mcp;
