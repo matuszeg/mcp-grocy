@@ -135,7 +135,10 @@ export function startHttpServer(
     // Streamable HTTP endpoint (Context7 modern)
     app.all('/mcp', mcpAccessGate, async (req, res) => {
       try {
-        const clientSessionId = req.headers['mcp-session-id'] as string | undefined;
+        const clientSessionId =
+          (req.headers['mcp-session-id'] as string | undefined) ||
+          (req.query.sessionId as string | undefined) ||
+          (req.query['mcp-session-id'] as string | undefined);
         let transport: StreamableHTTPServerTransport | undefined = undefined;
 
         // Accept header check (can be done early)

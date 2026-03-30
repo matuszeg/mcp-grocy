@@ -40,50 +40,54 @@ const EnvironmentSchema = z.object({
 });
 
 // YAML configuration schema
-const YamlConfigSchema = z.object({
-  server: z
-    .object({
-      enable_http_server: z.boolean().default(false),
-      http_server_port: z.number().min(1).max(65535).default(8080),
-      /** CORS `Access-Control-Allow-Origin` for HTTP MCP endpoints (`*` or a single origin URL) */
-      http_cors_origin: z.string().min(1).default('*'),
-      /** When set, MCP HTTP/SSE routes require `Authorization: Bearer <token>`, `X-MCP-Access-Token`, or `access_token` query (GET only). */
-      http_access_token: z.string().optional(),
-    })
-    .default({
-      enable_http_server: false,
-      http_server_port: 8080,
-      http_cors_origin: '*',
-    }),
+const YamlConfigSchema = z
+  .object({
+    server: z
+      .object({
+        enable_http_server: z.boolean().default(false),
+        http_server_port: z.number().min(1).max(65535).default(8080),
+        /** CORS `Access-Control-Allow-Origin` for HTTP MCP endpoints (`*` or a single origin URL) */
+        http_cors_origin: z.string().min(1).default('*'),
+        /** When set, MCP HTTP/SSE routes require `Authorization: Bearer <token>`, `X-MCP-Access-Token`, or `access_token` query (GET only). */
+        http_access_token: z.string().optional(),
+      })
+      .strict()
+      .default({
+        enable_http_server: false,
+        http_server_port: 8080,
+        http_cors_origin: '*',
+      }),
 
-  grocy: z
-    .object({
-      base_url: z.string().url().default('http://localhost:9283'),
-      api_key: z.string().optional(),
-      enable_ssl_verify: z.boolean().default(true),
-      response_size_limit: z.number().positive().default(10000),
-      /** Max Grocy API response body size in bytes (all tools); larger responses fail fast */
-      max_response_bytes: z.number().positive().default(DEFAULT_MAX_RESPONSE_BYTES),
-    })
-    .default({
-      base_url: 'http://localhost:9283',
-      enable_ssl_verify: true,
-      response_size_limit: 10000,
-      max_response_bytes: DEFAULT_MAX_RESPONSE_BYTES,
-    }),
+    grocy: z
+      .object({
+        base_url: z.string().url().default('http://localhost:9283'),
+        api_key: z.string().optional(),
+        enable_ssl_verify: z.boolean().default(true),
+        response_size_limit: z.number().positive().default(10000),
+        /** Max Grocy API response body size in bytes (all tools); larger responses fail fast */
+        max_response_bytes: z.number().positive().default(DEFAULT_MAX_RESPONSE_BYTES),
+      })
+      .strict()
+      .default({
+        base_url: 'http://localhost:9283',
+        enable_ssl_verify: true,
+        response_size_limit: 10000,
+        max_response_bytes: DEFAULT_MAX_RESPONSE_BYTES,
+      }),
 
-  tools: z
-    .record(
-      z.string(),
-      z
-        .object({
-          enabled: z.boolean().default(false),
-          ack_token: z.string().optional(),
-        })
-        .catchall(z.unknown()),
-    )
-    .default({}),
-});
+    tools: z
+      .record(
+        z.string(),
+        z
+          .object({
+            enabled: z.boolean().default(false),
+            ack_token: z.string().optional(),
+          })
+          .catchall(z.unknown()),
+      )
+      .default({}),
+  })
+  .strict();
 
 export type Environment = z.infer<typeof EnvironmentSchema>;
 export type YamlConfig = z.infer<typeof YamlConfigSchema>;
