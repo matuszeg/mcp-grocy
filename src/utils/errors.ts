@@ -22,7 +22,7 @@ export class AppError extends Error {
     category: ErrorCategory,
     statusCode?: number,
     operation?: string,
-    details?: any
+    details?: any,
   ) {
     super(message);
     this.name = 'AppError';
@@ -30,7 +30,7 @@ export class AppError extends Error {
     this.statusCode = statusCode;
     this.operation = operation;
     this.details = details;
-    
+
     Object.setPrototypeOf(this, AppError.prototype);
   }
 
@@ -41,13 +41,16 @@ export class AppError extends Error {
 
   private getErrorCode(): ErrorCode {
     switch (this.category) {
-      case 'VALIDATION': return ErrorCode.InvalidParams;
-      case 'AUTH': return ErrorCode.InvalidRequest;
+      case 'VALIDATION':
+        return ErrorCode.InvalidParams;
+      case 'AUTH':
+        return ErrorCode.InvalidRequest;
       case 'API':
         if (this.statusCode === 404) return ErrorCode.InvalidRequest;
         if (this.statusCode === 401 || this.statusCode === 403) return ErrorCode.InvalidRequest;
         return ErrorCode.InternalError;
-      default: return ErrorCode.InternalError;
+      default:
+        return ErrorCode.InternalError;
     }
   }
 }
@@ -67,19 +70,16 @@ export class ApiError extends AppError {
         error.response.data?.message || `HTTP ${error.response.status}`,
         error.response.status,
         operation,
-        { url: error.config?.url, method: error.config?.method }
+        { url: error.config?.url, method: error.config?.method },
       );
     }
-    
+
     if (error.request) {
-      return new ApiError(
-        'Network error - unable to reach server',
-        undefined,
-        operation,
-        { url: error.config?.url }
-      );
+      return new ApiError('Network error - unable to reach server', undefined, operation, {
+        url: error.config?.url,
+      });
     }
-    
+
     return new ApiError(error.message || 'Request error', undefined, operation);
   }
 }
@@ -111,10 +111,7 @@ export class ErrorHandler {
   /**
    * Handle async operations with error wrapping
    */
-  static async handleAsync<T>(
-    operation: () => Promise<T>,
-    context?: string
-  ): Promise<T> {
+  static async handleAsync<T>(operation: () => Promise<T>, context?: string): Promise<T> {
     try {
       return await operation();
     } catch (error) {
@@ -129,13 +126,13 @@ export class ErrorHandler {
   static logError(error: any, context?: string): void {
     const errorMessage = error instanceof Error ? error.message : String(error);
     const fullContext = context ? `${context}: ${errorMessage}` : errorMessage;
-    
+
     if (error instanceof AppError) {
       logger.warn(fullContext, 'ERROR', {
         category: error.category,
         statusCode: error.statusCode,
         operation: error.operation,
-        details: error.details
+        details: error.details,
       });
     } else {
       logger.error(fullContext, 'ERROR', { error });
@@ -149,11 +146,11 @@ export class ErrorHandler {
     if (error instanceof AppError) {
       return error;
     }
-    
+
     if (error instanceof McpError) {
       return new AppError(error.message, 'INTERNAL', undefined, context);
     }
-    
+
     const message = error instanceof Error ? error.message : String(error);
     return new AppError(message, 'INTERNAL', undefined, context);
   }
@@ -165,11 +162,11 @@ export class ErrorHandler {
     if (error instanceof McpError) {
       return error;
     }
-    
+
     if (error instanceof AppError) {
       return error.toMcpError();
     }
-    
+
     const message = error instanceof Error ? error.message : fallbackMessage;
     return new McpError(ErrorCode.InternalError, message);
   }

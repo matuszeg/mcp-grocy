@@ -23,16 +23,16 @@ async function main(): Promise<void> {
     if (!config.grocy.api_key) {
       logger.warn('No API key configured. Some operations may fail.', 'CONFIG');
     }
-    
+
     // Log configuration summary
     logger.config(`Grocy URL: ${config.grocy.base_url}`);
     logger.config(`SSL Verify: ${config.grocy.enable_ssl_verify}`);
     logger.config(`HTTP Server: ${config.server.enable_http_server}`);
-    
+
     // Create and start server
     const server = await GrocyMcpServer.create();
     await server.start();
-    
+
     logger.info('Server started successfully', 'SERVER');
   }, 'server startup');
 }

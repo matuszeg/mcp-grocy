@@ -11,10 +11,7 @@ Edit `claude_desktop_config.json`(for Claude Desktop) or `.cursor/mcp.json`(for 
   "mcpServers": {
     "mcp-grocy": {
       "command": "npx",
-      "args": [
-        "-y",
-        "miguelangel-nubla/mcp-grocy"
-      ], 
+      "args": ["-y", "miguelangel-nubla/mcp-grocy"],
       "env": {
         "GROCY_BASE_URL": "",
         "GROCY_API_KEY": "",
@@ -25,20 +22,15 @@ Edit `claude_desktop_config.json`(for Claude Desktop) or `.cursor/mcp.json`(for 
   }
 }
 ```
+
 Or you can use Docker:
+
 ```json
 {
   "mcpServers": {
     "mcp-grocy": {
       "command": "docker",
-      "args": [
-        "run",
-        "ghcr.io/miguelangel-nubla/mcp-grocy",
-        "tini",
-        "--",
-        "node",
-        "build/main.js"
-        ],
+      "args": ["run", "ghcr.io/miguelangel-nubla/mcp-grocy", "tini", "--", "node", "build/main.js"],
       "env": {
         "GROCY_BASE_URL": "",
         "GROCY_API_KEY": "",
@@ -55,12 +47,14 @@ Or you can use Docker:
 To install using Node.js, you will need to have Node.js and npm (or yarn) installed.
 
 Clone the repository:
+
 ```bash
 git clone -b main https://github.com/miguelangel-nubla/mcp-grocy.git
 cd mcp-grocy
 ```
 
 Install dependencies:
+
 ```bash
 npm install
 # or
@@ -68,6 +62,7 @@ yarn install
 ```
 
 Then you can run the server:
+
 ```bash
 npm start
 # or
@@ -76,7 +71,7 @@ yarn start
 
 ## npx
 
-You can also run the server directly using npx (Node.js 12.x or newer):
+You can also run the server directly using npx (Node.js 22 or newer; see `package.json` `engines`):
 
 ```bash
 npx -y mcp-grocy

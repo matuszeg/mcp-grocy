@@ -7,7 +7,7 @@ export enum LogLevel {
   WARN = 1,
   INFO = 2,
   DEBUG = 3,
-  TRACE = 4
+  TRACE = 4,
 }
 
 export interface LogEntry {
@@ -26,11 +26,11 @@ export class Logger {
   private constructor() {
     // Default to INFO level, but allow override via environment
     this.logLevel = this.parseLogLevel(process.env.LOG_LEVEL || 'INFO');
-    
+
     // Allow filtering by categories
     const categories = process.env.LOG_CATEGORIES;
     if (categories) {
-      this.enabledCategories = new Set(categories.split(',').map(c => c.trim().toUpperCase()));
+      this.enabledCategories = new Set(categories.split(',').map((c) => c.trim().toUpperCase()));
     }
   }
 
@@ -44,12 +44,18 @@ export class Logger {
   private parseLogLevel(level: string): LogLevel {
     const upperLevel = level.toUpperCase();
     switch (upperLevel) {
-      case 'ERROR': return LogLevel.ERROR;
-      case 'WARN': return LogLevel.WARN;
-      case 'INFO': return LogLevel.INFO;
-      case 'DEBUG': return LogLevel.DEBUG;
-      case 'TRACE': return LogLevel.TRACE;
-      default: return LogLevel.INFO;
+      case 'ERROR':
+        return LogLevel.ERROR;
+      case 'WARN':
+        return LogLevel.WARN;
+      case 'INFO':
+        return LogLevel.INFO;
+      case 'DEBUG':
+        return LogLevel.DEBUG;
+      case 'TRACE':
+        return LogLevel.TRACE;
+      default:
+        return LogLevel.INFO;
     }
   }
 
@@ -72,7 +78,7 @@ export class Logger {
     const level = LogLevel[entry.level].padEnd(5);
     const category = entry.category ? `[${entry.category}]` : '';
     const data = entry.data ? ` ${JSON.stringify(entry.data)}` : '';
-    
+
     return `${timestamp} ${level} ${category} ${entry.message}${data}`;
   }
 
@@ -86,17 +92,13 @@ export class Logger {
       message,
       category: category || undefined,
       data,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     const formattedMessage = this.formatMessage(entry);
 
     // Use stderr for all logs to avoid interfering with MCP stdio protocol
-    if (level <= LogLevel.ERROR) {
-      console.error(formattedMessage);
-    } else {
-      console.error(formattedMessage);
-    }
+    console.error(formattedMessage);
   }
 
   public error(message: string, category?: string, data?: any): void {
@@ -146,7 +148,7 @@ export class Logger {
   }
 
   public setEnabledCategories(categories: string[] | null): void {
-    this.enabledCategories = categories ? new Set(categories.map(c => c.toUpperCase())) : null;
+    this.enabledCategories = categories ? new Set(categories.map((c) => c.toUpperCase())) : null;
   }
 }
 

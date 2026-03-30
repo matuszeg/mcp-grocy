@@ -6,7 +6,13 @@
 import { readdirSync } from 'fs';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { ToolModule } from './types.js';
+import {
+  ToolModule,
+  ToolDefinition,
+  ToolHandler,
+  SubConfigValidator,
+  ToolRegistry,
+} from './types.js';
 import { logger } from '../utils/logger.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -35,10 +41,10 @@ export class ModuleLoader {
     try {
       const toolsDir = __dirname;
       this.discoveredFolders = readdirSync(toolsDir, { withFileTypes: true })
-        .filter(dirent => dirent.isDirectory())
-        .filter(dirent => !dirent.name.startsWith('.') && dirent.name !== 'node_modules')
-        .map(dirent => dirent.name);
-      
+        .filter((dirent) => dirent.isDirectory())
+        .filter((dirent) => !dirent.name.startsWith('.') && dirent.name !== 'node_modules')
+        .map((dirent) => dirent.name);
+
       logger.module(`Discovered ${this.discoveredFolders.length} tool folders`);
     } catch (error) {
       logger.error('Failed to discover tool folders', 'MODULE', { error });
@@ -56,18 +62,18 @@ export class ModuleLoader {
     const toolModules: ToolModule[] = [];
 
     // Load modules in parallel for better performance
-    const loadPromises = folders.map(folder => this.loadModule(folder));
+    const loadPromises = folders.map((folder) => this.loadModule(folder));
     const results = await Promise.allSettled(loadPromises);
 
     results.forEach((result, index) => {
       const folder = folders[index]!;
-      
+
       if (result.status === 'fulfilled' && result.value?.toolModule) {
         toolModules.push(result.value.toolModule);
         logger.module(`Loaded module: ${folder}`);
       } else if (result.status === 'rejected') {
         logger.debug(`Failed to load module ${folder}`, 'MODULE', {
-          error: result.reason
+          error: result.reason,
         });
       }
     });
@@ -86,18 +92,18 @@ export class ModuleLoader {
     }
 
     const moduleInfo: CachedModule = { loaded: false };
-    
+
     try {
       // Use .js extension for production builds
       const extension = '.js';
       const indexPath = `./${folderName}/index${extension}`;
-      
+
       const moduleIndex = await import(indexPath);
-      
+
       // Find tool module export
       for (const [, exportValue] of Object.entries(moduleIndex)) {
         if (this.isToolModule(exportValue)) {
-          moduleInfo.toolModule = exportValue as ToolModule;
+          moduleInfo.toolModule = exportValue;
           moduleInfo.loaded = true;
           break;
         }
@@ -119,12 +125,17 @@ export class ModuleLoader {
   /**
    * Check if an export looks like a ToolModule
    */
-  private static isToolModule(obj: any): boolean {
-    return obj && 
-           typeof obj === 'object' && 
-           Array.isArray(obj.definitions) && 
-           typeof obj.handlers === 'object' &&
-           obj.definitions.length > 0;
+  private static isToolModule(obj: unknown): obj is ToolModule {
+    if (obj === null || typeof obj !== 'object') {
+      return false;
+    }
+    const m = obj as Record<string, unknown>;
+    return (
+      Array.isArray(m.definitions) &&
+      m.definitions.length > 0 &&
+      typeof m.handlers === 'object' &&
+      m.handlers !== null
+    );
   }
 
   /**
@@ -135,35 +146,34 @@ export class ModuleLoader {
     return cached?.toolModule;
   }
 
-
   /**
    * Get cache statistics
    */
   static getCacheStats(): { total: number; loaded: number; errors: number } {
     let loaded = 0;
     let errors = 0;
-    
+
     for (const module of this.moduleCache.values()) {
       if (module.loaded) loaded++;
       if (module.error) errors++;
     }
-    
+
     return {
       total: this.moduleCache.size,
       loaded,
-      errors
+      errors,
     };
   }
 }
 
 // Factory function
-export async function createToolRegistry(): Promise<{ getDefinitions(): any[]; getHandler(name: string): any; getValidator(name: string): any; getToolNames(): string[] }> {
+export async function createToolRegistry(): Promise<ToolRegistry> {
   const { toolModules } = await ModuleLoader.loadAllModules();
-  
-  const definitions: any[] = [];
-  const handlers: Record<string, any> = {};
-  const validators: Record<string, any> = {};
-  
+
+  const definitions: ToolDefinition[] = [];
+  const handlers: Record<string, ToolHandler> = {};
+  const validators: Record<string, SubConfigValidator> = {};
+
   for (const module of toolModules) {
     definitions.push(...module.definitions);
     Object.assign(handlers, module.handlers);
@@ -171,11 +181,11 @@ export async function createToolRegistry(): Promise<{ getDefinitions(): any[]; g
       Object.assign(validators, module.validators);
     }
   }
-  
+
   return {
     getDefinitions: () => definitions,
     getHandler: (name: string) => handlers[name],
-    getValidator: (name: string) => validators[name],
-    getToolNames: () => definitions.map(def => def.name)
+    getValidator: (name: string): SubConfigValidator | undefined => validators[name],
+    getToolNames: () => definitions.map((def) => def.name),
   };
 }

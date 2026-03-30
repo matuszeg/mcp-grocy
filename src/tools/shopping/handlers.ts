@@ -13,14 +13,14 @@ export class ShoppingToolHandlers extends BaseToolHandler {
     return this.executeToolHandler(async () => {
       const { productId, amount = 1, shoppingListId = 1, note = '' } = args || {};
       this.validateRequired({ productId }, ['productId']);
-      
+
       const body = {
         product_id: productId,
         amount,
         shopping_list_id: shoppingListId,
-        note
+        note,
       };
-      
+
       const result = await this.apiCall('/objects/shopping_list', 'POST', body);
       return this.createSuccess(result, 'Shopping list item added successfully');
     });
@@ -30,7 +30,7 @@ export class ShoppingToolHandlers extends BaseToolHandler {
     return this.executeToolHandler(async () => {
       const { shoppingListItemId } = args || {};
       this.validateRequired({ shoppingListItemId }, ['shoppingListItemId']);
-      
+
       const result = await this.apiCall(`/objects/shopping_list/${shoppingListItemId}`, 'DELETE');
       return this.createSuccess(result, 'Shopping list item removed successfully');
     });

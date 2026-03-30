@@ -17,17 +17,14 @@ fs.ensureDirSync(buildDir);
 const version = process.env.RELEASE_VERSION || pkg.version;
 console.log(`Using version: ${version}`);
 
+const serverName = String(pkg.name).toLowerCase();
 const versionContent = `// Auto-generated file - DO NOT MODIFY
 export const VERSION = '${version}';
-export const PACKAGE_NAME = '${pkg.name.toLowerCase()}';
-export const SERVER_NAME = 'grocy-api';
+export const PACKAGE_NAME = '${serverName}';
+export const SERVER_NAME = '${serverName}';
 `;
 
-fs.writeFileSync(
-  path.resolve(__dirname, '../src/version.ts'), 
-  versionContent, 
-  'utf8'
-);
+fs.writeFileSync(path.resolve(__dirname, '../src/version.ts'), versionContent, 'utf8');
 
 console.log('Generated version.ts with package values');
 
@@ -44,7 +41,7 @@ if (fs.existsSync(srcResourcesDir)) {
 
 // Copy important root MD files (README, CHANGELOG, DOCS) to build/resources as well
 const rootDir = path.resolve(__dirname, '..');
-['README.md', 'CHANGELOG.md', 'DOCS.md'].forEach(file => {
+['README.md', 'CHANGELOG.md', 'DOCS.md'].forEach((file) => {
   const sourcePath = path.join(rootDir, file);
   if (fs.existsSync(sourcePath)) {
     fs.copySync(sourcePath, path.join(buildResourcesDir, file));

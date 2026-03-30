@@ -3,9 +3,14 @@
 # Copy this file to mcp-grocy.yaml and customize as needed
 
 # Server Configuration
+# For HTTP-only daemons (e.g. CI): set env MCP_HTTP_TRANSPORT_ONLY=true and ENABLE_HTTP_SERVER=true
 server:
   enable_http_server: false
   http_server_port: 8080
+  # CORS origin for MCP HTTP/SSE (use a specific URL instead of * when exposing the port)
+  http_cors_origin: "*"
+  # Optional: require token on /mcp, /mcp/sse, /mcp/messages (see MCP_HTTP_ACCESS_TOKEN)
+  # http_access_token: "your-secret-token"
 
 # Grocy API Configuration
 grocy:
@@ -13,6 +18,8 @@ grocy:
   # api_key: your_api_key_here  # Set via GROCY_API_KEY env var
   enable_ssl_verify: true
   response_size_limit: 10000
+  # Max Grocy API response body in bytes (all tools); override with GROCY_MAX_RESPONSE_BYTES
+  max_response_bytes: 52428800
 
 # Tool Configuration
 # All tools can have acknowledgment tokens configured

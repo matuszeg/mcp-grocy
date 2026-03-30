@@ -1,40 +1,41 @@
-# MCP Grocy Configuration Guide
+# mcp-grocy configuration guide
 
-Advanced configuration reference for the MCP Grocy server. For basic setup, see the [README](../../README.md).
+Advanced configuration reference for the **mcp-grocy** npm package (this MCP server). It connects to your **Grocy** instance via `GROCY_BASE_URL` / `GROCY_API_KEY`. For basic setup, see the [README](../../README.md).
 
 ## 🔧 Configuration Variables
 
 ### Core Variables
 
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `GROCY_BASE_URL` | Your Grocy instance URL | `http://localhost:9283` | ✅ |
-| `GROCY_API_KEY` | Your Grocy API key | - | ✅ |
+| Variable         | Description             | Default                 | Required |
+| ---------------- | ----------------------- | ----------------------- | -------- |
+| `GROCY_BASE_URL` | Your Grocy instance URL | `http://localhost:9283` | ✅       |
+| `GROCY_API_KEY`  | Your Grocy API key      | -                       | ✅       |
 
 ### Optional Variables
 
-| Variable | Description | Default | Example |
-|----------|-------------|---------|---------|
-| `GROCY_ENABLE_SSL_VERIFY` | SSL certificate verification | `true` | `false` |
-| `REST_RESPONSE_SIZE_LIMIT` | Response size limit (bytes) | `10000` | `50000` |
+| Variable                   | Description                  | Default | Example |
+| -------------------------- | ---------------------------- | ------- | ------- |
+| `GROCY_ENABLE_SSL_VERIFY`  | SSL certificate verification | `true`  | `false` |
+| `REST_RESPONSE_SIZE_LIMIT` | Response size limit (bytes)  | `10000` | `50000` |
 
 ## 🌐 HTTP Server Configuration
 
 Enable HTTP/SSE transport for web-based access:
 
-| Variable | Description | Default | Example |
-|----------|-------------|---------|---------|
-| `ENABLE_HTTP_SERVER` | Enable HTTP/SSE transport | `false` | `true` |
-| `HTTP_SERVER_PORT` | HTTP server port | `8080` | `3000` |
+| Variable             | Description               | Default | Example |
+| -------------------- | ------------------------- | ------- | ------- |
+| `ENABLE_HTTP_SERVER` | Enable HTTP/SSE transport | `false` | `true`  |
+| `HTTP_SERVER_PORT`   | HTTP server port          | `8080`  | `3000`  |
 
 ### Transport Modes
+
 - **stdio** (default) - Standard MCP protocol for CLI/desktop clients
 - **HTTP** - Streamable HTTP for web applications (`POST /mcp`)
 - **SSE** - Server-Sent Events for real-time web clients (`GET /mcp/sse`)
 
 ## 🛠️ Tool Configuration
 
-Tools are configured using the YAML configuration file `mcp-grocy.yaml`. 
+Tools are configured using the YAML configuration file `mcp-grocy.yaml`.
 
 Copy `mcp-grocy.yaml.example` to `mcp-grocy.yaml` and customize the `tools` section to enable/disable specific functionality.
 
@@ -57,16 +58,19 @@ Configuration examples for common use cases are provided in `mcp-grocy.yaml.exam
 ## 🔒 Security Considerations
 
 ### API Key Security
+
 - Never commit API keys to version control
 - Use `.env` files for local development
 - Use secure environment variable management in production
 
 ### Tool Access Control
+
 - Disable unused tools to reduce attack surface
 - Use read-only mode for information-gathering use cases
 - Be cautious with tools that modify data (`inventory_transactions_purchase`, `inventory_stock_entry_consume`, etc.)
 
 ### Network Security
+
 - Use HTTPS for production Grocy instances
 - Consider SSL verification settings carefully
 - Limit response sizes to prevent memory issues
@@ -74,6 +78,7 @@ Configuration examples for common use cases are provided in `mcp-grocy.yaml.exam
 ## 📝 Environment File Examples
 
 ### Development Configuration
+
 ```bash
 # .env for development
 GROCY_BASE_URL=http://localhost:9283
@@ -87,6 +92,7 @@ HTTP_SERVER_PORT=8080
 ```
 
 ### Production Configuration
+
 ```bash
 # .env for production
 GROCY_BASE_URL=https://grocy.yourdomain.com
@@ -100,16 +106,19 @@ Tool configuration should be done via `mcp-grocy.yaml` file.
 ## 🔄 Configuration Management
 
 ### Loading Order
+
 1. Default values
 2. Environment variables
 3. `.env` file (if present)
 
 ### Validation
+
 - Server validates all tool names at startup
 - Invalid configuration prevents server start
 - Error messages show valid options
 
 ### Runtime Changes
+
 - Configuration changes require server restart
 - Use process managers (PM2, systemd) for production restarts
 - Docker containers need to be recreated with new environment
@@ -119,26 +128,30 @@ Tool configuration should be done via `mcp-grocy.yaml` file.
 ### Common Issues
 
 **Tool configuration not working**
+
 - Check YAML syntax and indentation
 - Verify tool names match current naming convention
 - Ensure `mcp-grocy.yaml` file is in the correct location
 
 **SSL/TLS connection errors**
+
 - Set `GROCY_ENABLE_SSL_VERIFY=false` for self-signed certificates
 - Verify Grocy URL is accessible
 - Check firewall and network settings
 
 **Large response errors**
+
 - Increase `REST_RESPONSE_SIZE_LIMIT`
 - Consider disabling unused tools to reduce response size
 - Check Grocy instance has reasonable data volumes
 
 ### Debugging Configuration
+
 ```bash
 # Use mock mode to test configuration
 npm run dev
 
-# Enable MCP inspector for protocol debugging  
+# Enable MCP inspector for protocol debugging
 npm run inspector
 
 # Check configuration loading

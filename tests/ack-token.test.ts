@@ -6,8 +6,8 @@ describe('Acknowledgment Token Logic', () => {
     const result = {
       content: [
         { type: 'text' as const, text: 'Operation completed successfully' },
-        { type: 'text' as const, text: '{"result": "success"}' }
-      ]
+        { type: 'text' as const, text: '{"result": "success"}' },
+      ],
     };
 
     const subConfigs = new Map([['ack_token', 'TEST_ACKNOWLEDGMENT_TOKEN']]);
@@ -18,7 +18,7 @@ describe('Acknowledgment Token Logic', () => {
       if (ackToken && typeof ackToken === 'string') {
         result.content.unshift({
           type: 'text' as const,
-          text: `Acknowledgment token: ${ackToken}`
+          text: `Acknowledgment token: ${ackToken}`,
         });
       }
     }
@@ -34,8 +34,8 @@ describe('Acknowledgment Token Logic', () => {
     const result = {
       content: [
         { type: 'text' as const, text: 'Operation completed successfully' },
-        { type: 'text' as const, text: '{"result": "success"}' }
-      ]
+        { type: 'text' as const, text: '{"result": "success"}' },
+      ],
     };
 
     const subConfigs = new Map(); // No ack_token configured
@@ -46,7 +46,7 @@ describe('Acknowledgment Token Logic', () => {
       if (ackToken && typeof ackToken === 'string') {
         result.content.unshift({
           type: 'text' as const,
-          text: `Acknowledgment token: ${ackToken}`
+          text: `Acknowledgment token: ${ackToken}`,
         });
       }
     }
@@ -59,10 +59,8 @@ describe('Acknowledgment Token Logic', () => {
 
   it('should not add acknowledgment token for error responses', () => {
     const result = {
-      content: [
-        { type: 'text' as const, text: 'Error: Something went wrong' }
-      ],
-      isError: true
+      content: [{ type: 'text' as const, text: 'Error: Something went wrong' }],
+      isError: true,
     };
 
     const subConfigs = new Map([['ack_token', 'TEST_ACKNOWLEDGMENT_TOKEN']]);
@@ -73,7 +71,7 @@ describe('Acknowledgment Token Logic', () => {
       if (ackToken && typeof ackToken === 'string') {
         result.content.unshift({
           type: 'text' as const,
-          text: `Acknowledgment token: ${ackToken}`
+          text: `Acknowledgment token: ${ackToken}`,
         });
       }
     }

@@ -10,12 +10,12 @@ describe('ToolRegistry', () => {
 
   it('should register all tool definitions', () => {
     const definitions = registry.getDefinitions();
-    
+
     expect(definitions).toBeDefined();
     expect(definitions.length).toBeGreaterThan(30); // We should have 30+ tools
-    
+
     // Check for some key namespaced tools
-    const toolNames = definitions.map(def => def.name);
+    const toolNames = definitions.map((def) => def.name);
     expect(toolNames).toContain('inventory_products_get');
     expect(toolNames).toContain('inventory_stock_get_all');
     expect(toolNames).toContain('recipes_management_get');
@@ -25,7 +25,7 @@ describe('ToolRegistry', () => {
 
   it('should have handlers for all defined tools', () => {
     const definitions = registry.getDefinitions();
-    
+
     for (const definition of definitions) {
       const handler = registry.getHandler(definition.name);
       expect(handler).toBeDefined();
@@ -40,9 +40,9 @@ describe('ToolRegistry', () => {
   it('should return correct tool names', () => {
     const toolNames = registry.getToolNames();
     const definitions = registry.getDefinitions();
-    
+
     expect(toolNames.length).toBe(definitions.length);
-    expect(toolNames).toEqual(definitions.map(def => def.name));
+    expect(toolNames).toEqual(definitions.map((def) => def.name));
   });
 });
 
@@ -60,7 +60,7 @@ describe('Tool Definitions Structure', () => {
       expect(definition).toHaveProperty('name');
       expect(definition).toHaveProperty('description');
       expect(definition).toHaveProperty('inputSchema');
-      
+
       expect(typeof definition.name).toBe('string');
       expect(typeof definition.description).toBe('string');
       expect(definition.inputSchema.type).toBe('object');
@@ -71,9 +71,9 @@ describe('Tool Definitions Structure', () => {
   });
 
   it('should have unique tool names', () => {
-    const toolNames = definitions.map(def => def.name);
+    const toolNames = definitions.map((def) => def.name);
     const uniqueNames = [...new Set(toolNames)];
-    
+
     expect(toolNames.length).toBe(uniqueNames.length);
   });
 });

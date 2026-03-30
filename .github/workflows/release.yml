@@ -4,9 +4,8 @@ run-name: 'Release Pipeline ${{ github.ref_name }}@${{ github.sha }}'
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
-
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -21,70 +20,76 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: ./.github/actions/setup-node
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
 
-    - name: Validate release configuration
-      run: npm run verify-release-config
+      - name: Validate release configuration
+        run: npm run verify-release-config
 
   lint:
     name: Lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Setup Node.js
-      uses: ./.github/actions/setup-node
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
 
-    - name: Lint commit messages
-      run: npx commitlint --from $(git rev-list --max-parents=0 HEAD) --to HEAD || echo "Commit linting warnings found but continuing build"
+      - name: Lint commit messages
+        run: npx commitlint --from $(git rev-list --max-parents=0 HEAD) --to HEAD || echo "Commit linting warnings found but continuing build"
 
   test:
     name: Test
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: ./.github/actions/setup-node
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
 
-    - name: Run tests
-      run: npm test
-      env:
-        NODE_ENV: test
-        MOCK_API: true
+      - name: ESLint
+        run: npm run lint
+
+      - name: Prettier
+        run: npm run format:check
+
+      - name: Run tests
+        run: npm test
+        env:
+          NODE_ENV: test
+          MOCK_API: true
 
   build:
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: ./.github/actions/setup-node
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
 
-    - name: Build
-      run: npm run build
+      - name: Build
+        run: npm run build
 
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-artifacts
-        path: build/
-        retention-days: 1
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: build/
+          retention-days: 1
 
   release:
     name: Semantic Release
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [ build, test, validate-config, lint ]
+    needs: [build, test, validate-config, lint]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: write # For semantic-release to create tags and releases
@@ -94,33 +99,33 @@ jobs:
       new_release_published: ${{ steps.semantic-release.outputs.new_release_published }}
       new_release_version: ${{ steps.semantic-release.outputs.new_release_version }}
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        persist-credentials: true
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
 
-    - name: Setup Node.js
-      uses: ./.github/actions/setup-node
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
 
-    - name: Release
-      id: semantic-release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-      run: |
-        npx semantic-release --debug
-        
-        # Check if a new release was published by looking for a new tag on HEAD
-        if git describe --exact-match --tags HEAD 2>/dev/null; then
-          echo "new_release_published=true" >> $GITHUB_OUTPUT
-          echo "new_release_version=$(git describe --exact-match --tags HEAD)" >> $GITHUB_OUTPUT
-        else
-          echo "new_release_published=false" >> $GITHUB_OUTPUT
-        fi
+      - name: Release
+        id: semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npx semantic-release --debug
+
+          # Check if a new release was published by looking for a new tag on HEAD
+          if git describe --exact-match --tags HEAD 2>/dev/null; then
+            echo "new_release_published=true" >> $GITHUB_OUTPUT
+            echo "new_release_version=$(git describe --exact-match --tags HEAD)" >> $GITHUB_OUTPUT
+          else
+            echo "new_release_published=false" >> $GITHUB_OUTPUT
+          fi
 
   call-publish-docker:
     name: Publish Docker Image
-    needs: [ release ]
+    needs: [release]
     if: needs.release.outputs.new_release_published == 'true'
     permissions:
       packages: write # For publishing Docker images to GHCR

@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { GrocyMcpServer } from '../src/server/mcp-server.js';
 import { createToolRegistry, ToolRegistry } from '../src/tools/index.js';
+import { createLinkedTransports } from './mcp-linked-transport.js';
 
 // Mock config module
 vi.mock('../src/config/environment.js', () => ({
@@ -11,14 +14,14 @@ vi.mock('../src/config/environment.js', () => ({
       GROCY_ENABLE_SSL_VERIFY: true,
       ENABLE_HTTP_SERVER: false,
       HTTP_SERVER_PORT: 8080,
-      REST_RESPONSE_SIZE_LIMIT: 10000
+      REST_RESPONSE_SIZE_LIMIT: 10000,
     }),
     getGrocyBaseUrl: () => 'http://test-grocy:9283',
     getApiUrl: () => 'http://test-grocy:9283/api',
     hasApiKeyAuth: () => true,
     getCustomHeaders: () => ({}),
-    parseToolConfiguration: () => ({ enabledTools: new Set() })
-  }
+    parseToolConfiguration: () => ({ enabledTools: new Set() }),
+  },
 }));
 
 // Mock the API client
@@ -28,35 +31,20 @@ vi.mock('../src/api/client.js', () => ({
     get: vi.fn(),
     post: vi.fn(),
     put: vi.fn(),
-    delete: vi.fn()
+    delete: vi.fn(),
   },
   ApiError: class ApiError extends Error {
     constructor(message: string) {
       super(message);
       this.name = 'ApiError';
     }
-  }
-}));
-
-// Mock MCP SDK server
-const mockServer = {
-  setRequestHandler: vi.fn(),
-  connect: vi.fn(),
-  close: vi.fn(),
-  onerror: null
-};
-
-vi.mock('@modelcontextprotocol/sdk/server/index.js', () => ({
-  Server: vi.fn().mockImplementation(() => mockServer)
-}));
-
-vi.mock('@modelcontextprotocol/sdk/server/stdio.js', () => ({
-  StdioServerTransport: vi.fn()
+  },
 }));
 
 describe('Integration Tests', () => {
   let server: GrocyMcpServer;
   let toolRegistry: ToolRegistry;
+  let mcpClient: Client | undefined;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -64,11 +52,17 @@ describe('Integration Tests', () => {
   });
 
   afterEach(async () => {
+    try {
+      await mcpClient?.close();
+    } catch {
+      /* ignore */
+    }
+    mcpClient = undefined;
     if (server) {
       try {
         await server.serverInstance.close();
-      } catch (error) {
-        // Ignore close errors in tests
+      } catch {
+        /* ignore */
       }
     }
     vi.clearAllMocks();
@@ -83,11 +77,9 @@ describe('Integration Tests', () => {
       expect(server.serverInstance).toBeDefined();
     });
 
-    it('should register all request handlers', async () => {
+    it('should expose a real McpServer with tools/resources registered', async () => {
       server = await GrocyMcpServer.create();
-
-      // Should register initialize, list tools, call tool, and resource handlers
-      expect(mockServer.setRequestHandler).toHaveBeenCalled();
+      expect(server.serverInstance).toBeInstanceOf(McpServer);
     });
   });
 
@@ -100,7 +92,7 @@ describe('Integration Tests', () => {
       expect(toolNames.length).toBe(definitions.length);
 
       // Each definition should have a corresponding handler
-      definitions.forEach(def => {
+      definitions.forEach((def) => {
         const handler = toolRegistry.getHandler(def.name);
         expect(handler).toBeDefined();
         expect(typeof handler).toBe('function');
@@ -110,7 +102,7 @@ describe('Integration Tests', () => {
     it('should have valid tool definitions structure', () => {
       const definitions = toolRegistry.getDefinitions();
 
-      definitions.forEach(def => {
+      definitions.forEach((def) => {
         // Check required fields
         expect(def.name).toBeTypeOf('string');
         expect(def.description).toBeTypeOf('string');
@@ -127,39 +119,31 @@ describe('Integration Tests', () => {
       server = await GrocyMcpServer.create();
     });
 
-    it('should register call tool handler', () => {
-      // Check that setRequestHandler was called
-      expect(mockServer.setRequestHandler).toHaveBeenCalled();
-      
-      // Should have at least 4 handlers: initialize (x2), list tools, call tool
-      expect(mockServer.setRequestHandler.mock.calls.length).toBeGreaterThanOrEqual(4);
+    it('responds to tools/list and resources/list over an in-memory MCP transport', async () => {
+      const [clientTransport, serverTransport] = createLinkedTransports();
+      await server.serverInstance.connect(serverTransport);
+      mcpClient = new Client({ name: 'integration-test', version: '1.0.0' }, { capabilities: {} });
+      await mcpClient.connect(clientTransport);
+
+      const { tools } = await mcpClient.listTools();
+      expect(Array.isArray(tools)).toBe(true);
+
+      const { resources } = await mcpClient.listResources();
+      expect(resources.length).toBeGreaterThanOrEqual(3);
+      expect(resources.some((r) => String(r.uri).includes('examples'))).toBe(true);
     });
 
     it('should validate tool registry has handlers for all definitions', () => {
       const definitions = toolRegistry.getDefinitions();
-      
+
       expect(definitions.length).toBeGreaterThan(30);
-      
+
       // Each definition should have a handler
-      definitions.forEach(def => {
+      definitions.forEach((def) => {
         const handler = toolRegistry.getHandler(def.name);
         expect(handler).toBeDefined();
         expect(typeof handler).toBe('function');
       });
-    });
-  });
-
-  describe('Resource Handler Integration', () => {
-    beforeEach(async () => {
-      server = await GrocyMcpServer.create();
-    });
-
-    it('should register resource handlers', () => {
-      // Check that setRequestHandler was called for resources
-      expect(mockServer.setRequestHandler).toHaveBeenCalled();
-      
-      // Should have resource handlers registered
-      expect(mockServer.setRequestHandler.mock.calls.length).toBeGreaterThanOrEqual(5);
     });
   });
 
@@ -169,8 +153,7 @@ describe('Integration Tests', () => {
     });
 
     it('should set up error handling', () => {
-      // Server should have error handler set up (function or null)
-      expect(mockServer.onerror).toBeDefined();
+      expect(typeof server.serverInstance.server.onerror).toBe('function');
     });
 
     it('should validate server initialization', () => {
@@ -181,25 +164,24 @@ describe('Integration Tests', () => {
   });
 
   describe('Configuration Integration', () => {
-    it('should apply tool filtering when configured', () => {
+    it('should apply tool filtering when configured', async () => {
       // Mock tool filtering configuration
       vi.doMock('../src/config/environment.js', () => ({
         default: {
-          get: () => ({ /* config */ }),
-          parseToolConfiguration: () => ({ 
-            allowedTools: new Set(['get_products', 'get_stock']), 
-            blockedTools: new Set(['delete_recipe_from_meal_plan']) 
+          get: () => ({
+            /* config */
+          }),
+          parseToolConfiguration: () => ({
+            allowedTools: new Set(['inventory_products_get', 'inventory_stock_get_all']),
+            blockedTools: new Set(['delete_recipe_from_meal_plan']),
           }),
           getGrocyBaseUrl: () => 'http://test-grocy:9283',
           hasApiKeyAuth: () => true,
-          getCustomHeaders: () => ({})
-        }
+          getCustomHeaders: () => ({}),
+        },
       }));
 
-      // Should not throw when creating server with filtered tools
-      expect(async () => {
-        server = await GrocyMcpServer.create();
-      }).not.toThrow();
+      await expect(GrocyMcpServer.create()).resolves.toBeDefined();
     });
   });
 
@@ -207,14 +189,14 @@ describe('Integration Tests', () => {
     it('should load all tool modules correctly', async () => {
       // Test that the dynamic module loading system works
       const registry = await createToolRegistry();
-      
+
       expect(registry).toBeDefined();
       expect(registry.getDefinitions().length).toBeGreaterThan(25); // Should have many tools
       expect(registry.getToolNames().length).toBeGreaterThan(25);
-      
+
       // Verify all tools have handlers
       const definitions = registry.getDefinitions();
-      definitions.forEach(def => {
+      definitions.forEach((def) => {
         const handler = registry.getHandler(def.name);
         expect(handler).toBeDefined();
         expect(typeof handler).toBe('function');

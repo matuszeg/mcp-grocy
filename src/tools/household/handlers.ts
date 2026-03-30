@@ -3,7 +3,7 @@ import { ToolResult, ToolHandler } from '../types.js';
 
 export class HouseholdToolHandlers extends BaseToolHandler {
   // ==================== CHORE MANAGEMENT ====================
-  
+
   public getChores: ToolHandler = async (): Promise<ToolResult> => {
     return this.executeToolHandler(async () => {
       const data = await this.apiCall('/objects/chores');
@@ -15,14 +15,14 @@ export class HouseholdToolHandlers extends BaseToolHandler {
     return this.executeToolHandler(async () => {
       const { choreId, executedBy, trackedTime, note } = args || {};
       this.validateRequired({ choreId }, ['choreId']);
-      
+
       const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
       const body = {
         tracked_time: trackedTime || timestamp,
         ...(executedBy ? { done_by: executedBy } : {}),
-        ...(note ? { note } : {})
+        ...(note ? { note } : {}),
       };
-      
+
       const result = await this.apiCall(`/chores/${choreId}/execute`, 'POST', body);
       return this.createSuccess(result, 'Chore execution tracked successfully');
     });
@@ -41,7 +41,7 @@ export class HouseholdToolHandlers extends BaseToolHandler {
     return this.executeToolHandler(async () => {
       const { taskId, note } = args || {};
       this.validateRequired({ taskId }, ['taskId']);
-      
+
       const result = await this.apiCall(`/tasks/${taskId}/complete`, 'POST', note ? { note } : {});
       return this.createSuccess(result, 'Task completed successfully');
     });
@@ -60,13 +60,13 @@ export class HouseholdToolHandlers extends BaseToolHandler {
     return this.executeToolHandler(async () => {
       const { batteryId, trackedTime, note } = args || {};
       this.validateRequired({ batteryId }, ['batteryId']);
-      
+
       const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
       const body = {
         tracked_time: trackedTime || timestamp,
-        ...(note ? { note } : {})
+        ...(note ? { note } : {}),
       };
-      
+
       const result = await this.apiCall(`/batteries/${batteryId}/charge`, 'POST', body);
       return this.createSuccess(result, 'Battery charged successfully');
     });
@@ -109,7 +109,7 @@ export class HouseholdToolHandlers extends BaseToolHandler {
     return this.executeToolHandler(async () => {
       const { entityType, id } = args;
       this.validateRequired({ entityType, id }, ['entityType', 'id']);
-      
+
       let endpoint;
       switch (entityType.toLowerCase()) {
         case 'chore':
@@ -127,7 +127,7 @@ export class HouseholdToolHandlers extends BaseToolHandler {
         default:
           return this.createError(`Unsupported entity type: ${entityType}`);
       }
-      
+
       const result = await this.apiCall(endpoint, 'POST');
       return this.createSuccess(result, `${entityType} action undone successfully`);
     });
