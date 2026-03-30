@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import express from 'express';
-import { randomUUID } from 'crypto';
+import { randomUUID, timingSafeEqual } from 'crypto';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { VERSION, PACKAGE_NAME as SERVER_NAME } from '../version.js';
@@ -15,6 +15,12 @@ export interface HttpServerSecurityOptions {
   corsOrigin: string;
   /** When set, MCP routes require this token via Bearer, `X-MCP-Access-Token`, or `access_token` query (GET only). */
   accessToken?: string;
+}
+
+/** Constant-time string comparison to prevent timing attacks on token validation. */
+function safeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(Buffer.from(a), Buffer.from(b));
 }
 
 function createMcpAccessGate(accessToken: string | undefined) {
@@ -33,9 +39,9 @@ function createMcpAccessGate(accessToken: string | undefined) {
     const q = req.query.access_token;
     const queryToken = typeof q === 'string' ? q : undefined;
     const ok =
-      bearer === `Bearer ${accessToken}` ||
-      headerTokenStr === accessToken ||
-      (req.method === 'GET' && queryToken === accessToken);
+      (typeof bearer === 'string' && safeEqual(bearer, `Bearer ${accessToken}`)) ||
+      (typeof headerTokenStr === 'string' && safeEqual(headerTokenStr, accessToken)) ||
+      (req.method === 'GET' && typeof queryToken === 'string' && safeEqual(queryToken, accessToken));
     if (ok) {
       next();
       return;
@@ -97,10 +103,24 @@ export function startHttpServer(
       }),
     );
 
-    // Simple health check endpoint
-    app.get('/', (_req, res) => {
+    // Health check endpoint — always accessible for monitoring/load balancers,
+    // but only exposes service details when no access token is configured or request is authenticated.
+    app.get('/', (req, res) => {
+      const minimal = { status: 'ok' as const };
+      if (security.accessToken) {
+        const bearer = req.headers.authorization;
+        const headerToken = req.headers['x-mcp-access-token'];
+        const headerTokenStr = Array.isArray(headerToken) ? headerToken[0] : headerToken;
+        const authenticated =
+          (typeof bearer === 'string' && safeEqual(bearer, `Bearer ${security.accessToken}`)) ||
+          (typeof headerTokenStr === 'string' && safeEqual(headerTokenStr, security.accessToken));
+        if (!authenticated) {
+          res.json(minimal);
+          return;
+        }
+      }
       res.json({
-        status: 'ok',
+        ...minimal,
         service: SERVER_NAME,
         version: VERSION,
         message: 'MCP server is running',
@@ -149,9 +169,10 @@ export function startHttpServer(
           logger.warn('Client should accept application/json or text/event-stream', 'server');
         }
 
-        const isInitializeRequest = req.body?.method === 'initialize';
+        const isInitializeRequest = req.method === 'POST' && req.body?.method === 'initialize';
 
         if (clientSessionId && !isInitializeRequest) {
+          // Existing session: look up transport
           transport = streamableTransports[clientSessionId];
           if (!transport) {
             logger.warn(`Session ${clientSessionId} not found, returning 400`, 'server');
@@ -165,16 +186,20 @@ export function startHttpServer(
             });
             return;
           }
-        } else {
-          // Create new transport for new sessions OR initialize requests
-          // If it's an initialize request with a stale session ID, we start fresh
+        } else if (isInitializeRequest) {
+          // POST initialize: create new transport and session
           if (clientSessionId) {
             logger.info(
-              `Received initialize request with stale session ID ${clientSessionId}, starting new session`,
+              `Initialize request included prior session ID ${clientSessionId} (non-graceful reconnect), starting fresh session`,
               'server',
             );
+            // Clean up the stale transport to prevent memory leaks
+            const staleTransport = streamableTransports[clientSessionId];
+            if (staleTransport) {
+              delete streamableTransports[clientSessionId];
+              staleTransport.close?.().catch(() => {});
+            }
           }
-          // No session ID provided by client, create new transport
           const newGeneratedSessionId = randomUUID();
 
           const newTransportInstance = new StreamableHTTPServerTransport({
@@ -192,6 +217,18 @@ export function startHttpServer(
 
           const serverInstance = getServerInstance();
           await serverInstance.connect(transport as Transport);
+        } else {
+          // Non-initialize request without a session ID (e.g. GET SSE before session established)
+          // Return 405 so clients that probe for SSE support handle it gracefully
+          res.status(405).set('Allow', 'POST').json({
+            jsonrpc: '2.0',
+            error: {
+              code: -32000,
+              message: 'Method not allowed: session not established. Send a POST initialize request first.',
+            },
+            id: req.body?.id || null,
+          });
+          return;
         }
 
         if (!transport) {
@@ -317,6 +354,15 @@ export function startHttpServer(
           status: 404,
         });
       }
+    });
+
+    // Catch-all for undefined routes — return JSON instead of Express default HTML
+    app.use((_req, res) => {
+      res.status(404).json({
+        jsonrpc: '2.0',
+        error: { code: -32000, message: 'Not found' },
+        id: null,
+      });
     });
 
     // Create HTTP server with explicit error handling
