@@ -128,6 +128,7 @@ jobs:
     needs: [release]
     if: needs.release.outputs.new_release_published == 'true'
     permissions:
+      contents: read # Required by nested publish-docker workflow
       packages: write # For publishing Docker images to GHCR
     uses: ./.github/workflows/publish-docker.yml
     with:
